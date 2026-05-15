@@ -61,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ch.talkie.app.ChatMessage
 import ch.talkie.app.ParticipantUi
+import ch.talkie.app.ReplayClip
 import ch.talkie.app.TalkieState
 import ch.talkie.app.TalkieTab
 import ch.talkie.app.TalkieViewModel
@@ -434,7 +435,7 @@ private fun ChannelScreen(state: TalkieState, viewModel: TalkieViewModel) {
             when (state.tab) {
                 TalkieTab.People -> PeoplePanel(state.participants, viewModel)
                 TalkieTab.Chat -> ChatPanel(state, viewModel)
-                TalkieTab.Replays -> ReplaysPanel()
+                TalkieTab.Replays -> ReplaysPanel(state, viewModel)
             }
         }
 
@@ -541,12 +542,18 @@ private fun TalkieTabs(state: TalkieState, viewModel: TalkieViewModel) {
             selected = selected == 2,
             onClick = { viewModel.selectTab(TalkieTab.Replays) },
             text = {
-                Text(
-                    "Replays",
-                    fontSize = 12.sp,
-                    color = if (selected == 2) MaterialTheme.colorScheme.primary
-                    else Color(0xFFA3A3A3),
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Replays",
+                        fontSize = 12.sp,
+                        color = if (selected == 2) MaterialTheme.colorScheme.primary
+                        else Color(0xFFA3A3A3),
+                    )
+                    if (state.unreadReplays > 0) {
+                        Spacer(Modifier.size(4.dp))
+                        Badge(state.unreadReplays)
+                    }
+                }
             },
         )
     }
@@ -783,18 +790,108 @@ private fun ChatBubble(m: ChatMessage, isMine: Boolean) {
 }
 
 @Composable
-private fun ReplaysPanel() {
-    Box(
-        modifier = Modifier.fillMaxSize().padding(20.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            "Voice clip replays are available on the web client. Coming to Android soon — incoming audio is otherwise played live.",
-            color = Color(0xFF737373),
-            fontSize = 12.sp,
-            modifier = Modifier.fillMaxWidth(),
-        )
+private fun ReplaysPanel(state: TalkieState, viewModel: TalkieViewModel) {
+    if (state.replays.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize().padding(20.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                "No voice clips yet. Anything you receive while on this channel is recorded here so you can replay it. Clips disappear when you leave the channel.",
+                color = Color(0xFF737373),
+                fontSize = 12.sp,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        return
     }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "${state.replays.size} clip${if (state.replays.size == 1) "" else "s"}",
+                color = Color(0xFF737373),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+            )
+            TextLink("Clear all", viewModel::clearReplays)
+        }
+        LazyColumn(
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            items(state.replays, key = { it.id }) { clip ->
+                ReplayRow(
+                    clip = clip,
+                    playing = state.playingReplayId == clip.id,
+                    onToggle = { viewModel.playReplay(clip) },
+                )
+                Spacer(Modifier.height(6.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReplayRow(clip: ReplayClip, playing: Boolean, onToggle: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(if (playing) Color(0xFF052E1A) else Color(0xFF171717))
+            .border(
+                1.dp,
+                if (playing) MaterialTheme.colorScheme.primary else Color(0xFF262626),
+                RoundedCornerShape(14.dp),
+            )
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary)
+                .pointerInput(clip.id) {
+                    detectTapGestures(onTap = { onToggle() })
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                if (playing) "■" else "▶",
+                color = MaterialTheme.colorScheme.onPrimary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        Spacer(Modifier.size(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                clip.from,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                "${timeOf(clip.timestamp)} · ${formatDuration(clip.durationMs)}",
+                color = Color(0xFF737373),
+                fontSize = 10.sp,
+            )
+        }
+    }
+}
+
+private fun formatDuration(ms: Long): String {
+    val seconds = (ms / 1000.0)
+    return if (seconds < 10) "%.1fs".format(seconds) else "${seconds.toInt()}s"
 }
 
 @Composable

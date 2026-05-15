@@ -3,7 +3,9 @@ package ch.talkie.app
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
 import android.media.AudioManager
+import android.media.MediaPlayer
 import android.media.ToneGenerator
 import android.os.Build
 import android.os.VibrationEffect
@@ -11,6 +13,7 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import ch.talkie.app.audio.WavRecorder
 import ch.talkie.app.data.Persistence
 import ch.talkie.app.data.RecentChannel
 import ch.talkie.app.data.TalkieSettings
@@ -30,6 +33,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
@@ -50,6 +54,14 @@ data class ChatMessage(
     val timestamp: Long,
 )
 
+data class ReplayClip(
+    val id: String,
+    val from: String,
+    val timestamp: Long,
+    val durationMs: Long,
+    val filePath: String,
+)
+
 enum class TalkieTab { People, Chat, Replays }
 
 data class TalkieState(
@@ -64,10 +76,13 @@ data class TalkieState(
     val tab: TalkieTab = TalkieTab.People,
     val messages: List<ChatMessage> = emptyList(),
     val unreadChat: Int = 0,
+    val unreadReplays: Int = 0,
     val draft: String = "",
     val settings: TalkieSettings = TalkieSettings(),
     val recents: List<RecentChannel> = emptyList(),
     val inSettings: Boolean = false,
+    val replays: List<ReplayClip> = emptyList(),
+    val playingReplayId: String? = null,
 ) {
     val isPrivate: Boolean get() = pin.isNotBlank()
 
@@ -82,7 +97,11 @@ class TalkieViewModel(app: Application) : AndroidViewModel(app) {
     private var room: Room? = null
     private val remoteTracks = mutableMapOf<String, RemoteAudioTrack>()
     private val mixer = mutableMapOf<String, MixerEntry>()
+    private val recorders = mutableMapOf<String, WavRecorder>()
+    private val replayCutoffMs = 30_000L
+    private val maxReplays = 20
     private var toneGenerator: ToneGenerator? = null
+    private var mediaPlayer: MediaPlayer? = null
 
     init {
         val ctx = app.applicationContext
@@ -105,6 +124,7 @@ class TalkieViewModel(app: Application) : AndroidViewModel(app) {
             it.copy(
                 tab = tab,
                 unreadChat = if (tab == TalkieTab.Chat) 0 else it.unreadChat,
+                unreadReplays = if (tab == TalkieTab.Replays) 0 else it.unreadReplays,
             )
         }
     }
@@ -196,8 +216,12 @@ class TalkieViewModel(app: Application) : AndroidViewModel(app) {
                 refreshParticipants(r)
             }
             is RoomEvent.ParticipantDisconnected -> {
-                mixer.remove(event.participant.identity?.value)
-                remoteTracks.remove(event.participant.identity?.value)
+                val id = event.participant.identity?.value
+                if (id != null) {
+                    finishReplayRecording(id)
+                    mixer.remove(id)
+                    remoteTracks.remove(id)
+                }
                 refreshParticipants(r)
             }
             is RoomEvent.TrackSubscribed -> {
@@ -211,7 +235,10 @@ class TalkieViewModel(app: Application) : AndroidViewModel(app) {
             }
             is RoomEvent.TrackUnsubscribed -> {
                 val id = event.participant.identity?.value ?: return
-                if (event.track is RemoteAudioTrack) remoteTracks.remove(id)
+                if (event.track is RemoteAudioTrack) {
+                    finishReplayRecording(id)
+                    remoteTracks.remove(id)
+                }
             }
             is RoomEvent.ActiveSpeakersChanged -> {
                 refreshParticipants(r)
@@ -245,8 +272,127 @@ class TalkieViewModel(app: Application) : AndroidViewModel(app) {
             val s = _state.value.settings
             if (s.beepOnIncoming) playBeep()
             if (s.vibrateOnIncoming) vibrate()
+            startReplayRecording(identity)
+        } else {
+            finishReplayRecording(identity)
         }
         refreshParticipants(r)
+    }
+
+    private fun startReplayRecording(identity: String) {
+        if (recorders.containsKey(identity)) return
+        val track = remoteTracks[identity] ?: return
+        val dir = File(getApplication<Application>().cacheDir, "replays").apply {
+            if (!exists()) mkdirs()
+        }
+        val file = File(dir, "${identity}-${System.currentTimeMillis()}.wav")
+        val recorder = try {
+            WavRecorder(file)
+        } catch (_: Exception) {
+            return
+        }
+        try {
+            track.rtcTrack.addSink(recorder)
+        } catch (_: Exception) {
+            recorder.cancel()
+            return
+        }
+        recorders[identity] = recorder
+        // safety: stop after replayCutoffMs even if still speaking
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(replayCutoffMs)
+            if (recorders[identity] === recorder) {
+                finishReplayRecording(identity)
+            }
+        }
+    }
+
+    private fun finishReplayRecording(identity: String) {
+        val recorder = recorders.remove(identity) ?: return
+        val track = remoteTracks[identity]
+        try {
+            track?.rtcTrack?.removeSink(recorder)
+        } catch (_: Exception) {}
+        val durationMs = recorder.finish()
+        if (durationMs < 300) {
+            try { recorder.file.delete() } catch (_: Exception) {}
+            return
+        }
+        val clip = ReplayClip(
+            id = UUID.randomUUID().toString(),
+            from = identity,
+            timestamp = recorder.startedAt,
+            durationMs = durationMs,
+            filePath = recorder.file.absolutePath,
+        )
+        _state.update {
+            val next = (listOf(clip) + it.replays).take(maxReplays)
+            val dropped = (listOf(clip) + it.replays).drop(maxReplays)
+            dropped.forEach { d -> try { File(d.filePath).delete() } catch (_: Exception) {} }
+            it.copy(
+                replays = next,
+                unreadReplays = if (it.tab == TalkieTab.Replays) 0 else it.unreadReplays + 1,
+            )
+        }
+    }
+
+    fun playReplay(clip: ReplayClip) {
+        val current = _state.value.playingReplayId
+        // tapping the currently playing clip stops it
+        if (current == clip.id) {
+            stopPlayback()
+            return
+        }
+        stopPlayback()
+        val mp = MediaPlayer().apply {
+            setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build(),
+            )
+            setOnCompletionListener {
+                _state.update { it.copy(playingReplayId = null) }
+                release()
+                if (mediaPlayer === this) mediaPlayer = null
+            }
+            setOnErrorListener { _, _, _ ->
+                _state.update { it.copy(playingReplayId = null) }
+                true
+            }
+            try {
+                setDataSource(clip.filePath)
+                prepare()
+                start()
+            } catch (_: Exception) {
+                _state.update { it.copy(playingReplayId = null) }
+                release()
+                return
+            }
+        }
+        mediaPlayer = mp
+        _state.update { it.copy(playingReplayId = clip.id) }
+    }
+
+    fun stopPlayback() {
+        try {
+            mediaPlayer?.takeIf { it.isPlaying }?.stop()
+        } catch (_: Exception) {}
+        try {
+            mediaPlayer?.release()
+        } catch (_: Exception) {}
+        mediaPlayer = null
+        if (_state.value.playingReplayId != null) {
+            _state.update { it.copy(playingReplayId = null) }
+        }
+    }
+
+    fun clearReplays() {
+        stopPlayback()
+        _state.value.replays.forEach { c ->
+            try { File(c.filePath).delete() } catch (_: Exception) {}
+        }
+        _state.update { it.copy(replays = emptyList(), unreadReplays = 0) }
     }
 
     private fun onData(payload: ByteArray, participant: Participant?) {
@@ -340,6 +486,12 @@ class TalkieViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun disconnect() {
+        stopPlayback()
+        recorders.values.forEach { it.cancel() }
+        recorders.clear()
+        _state.value.replays.forEach { c ->
+            try { File(c.filePath).delete() } catch (_: Exception) {}
+        }
         room?.disconnect()
         room = null
         remoteTracks.clear()
@@ -351,8 +503,11 @@ class TalkieViewModel(app: Application) : AndroidViewModel(app) {
                 participants = emptyList(),
                 messages = emptyList(),
                 unreadChat = 0,
+                unreadReplays = 0,
                 transmitting = false,
                 pin = "",
+                replays = emptyList(),
+                playingReplayId = null,
             )
         }
     }
@@ -468,6 +623,12 @@ class TalkieViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     override fun onCleared() {
+        stopPlayback()
+        recorders.values.forEach { it.cancel() }
+        recorders.clear()
+        _state.value.replays.forEach { c ->
+            try { File(c.filePath).delete() } catch (_: Exception) {}
+        }
         room?.disconnect()
         toneGenerator?.release()
         stopPttService()
