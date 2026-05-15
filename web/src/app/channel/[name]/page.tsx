@@ -15,6 +15,7 @@ import {
   Track,
   createLocalAudioTrack,
 } from 'livekit-client';
+import { useUser } from '@clerk/nextjs';
 import { Logo } from '@/components/Logo';
 import { rememberChannel } from '@/lib/recent-channels';
 import { defaultSettings, loadSettings, type Settings } from '@/lib/settings';
@@ -54,8 +55,15 @@ export default function ChannelPage() {
   const params = useParams<{ name: string }>();
   const search = useSearchParams();
   const router = useRouter();
+  const { user, isLoaded } = useUser();
   const channelName = params?.name ?? 'general';
-  const userName = search.get('name') ?? '';
+  const userName =
+    user?.fullName ||
+    user?.username ||
+    user?.firstName ||
+    user?.emailAddresses[0]?.emailAddress ||
+    '';
+  const userId = user?.id ?? '';
   const isPrivate = search.get('private') === '1';
 
   const roomRef = useRef<Room | null>(null);
@@ -257,8 +265,9 @@ export default function ChannelPage() {
   }, []);
 
   useEffect(() => {
-    if (!userName) {
-      router.replace('/');
+    if (!isLoaded) return;
+    if (!userId) {
+      router.replace('/sign-in');
       return;
     }
 
@@ -337,11 +346,15 @@ export default function ChannelPage() {
             const parsed = JSON.parse(decoder.decode(payload)) as DataPayload;
             if (parsed.type === 'chat' && typeof parsed.text === 'string') {
               const from = participant?.identity ?? parsed.from ?? '(unknown)';
+              if (from === userId) {
+                // echo of our own message (we add locally on send); skip
+                return;
+              }
               setMessages((prev) => [
                 ...prev,
                 {
                   id: cryptoRandom(),
-                  from,
+                  from: parsed.from || from,
                   text: parsed.text,
                   ts: parsed.ts ?? Date.now(),
                 },
@@ -419,7 +432,8 @@ export default function ChannelPage() {
     };
   }, [
     channelName,
-    userName,
+    userId,
+    isLoaded,
     isPrivate,
     router,
     refreshParticipants,
@@ -490,14 +504,14 @@ export default function ChannelPage() {
     const msg: DataPayload = {
       type: 'chat',
       text,
-      from: userName,
+      from: userName || userId,
       ts: Date.now(),
     };
     const payload = encoder.encode(JSON.stringify(msg));
     room.localParticipant.publishData(payload, { reliable: true });
     setMessages((prev) => [
       ...prev,
-      { id: cryptoRandom(), from: userName, text, ts: msg.ts },
+      { id: cryptoRandom(), from: userName || userId, text, ts: msg.ts },
     ]);
     setDraft('');
   }
@@ -634,7 +648,7 @@ export default function ChannelPage() {
             sendMessage={sendMessage}
             connected={connected}
             scrollRef={chatScrollRef}
-            currentUser={userName}
+            currentUser={userName || userId}
           />
         )}
         {tab === 'replays' && (

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useState } from 'react';
+import { UserButton, useUser } from '@clerk/nextjs';
 import { Logo } from '@/components/Logo';
 import { IOSInstallHint } from '@/components/IOSInstallHint';
 import {
@@ -14,7 +15,7 @@ import { setChannelPin } from '@/lib/channel-pin';
 
 export default function HomePage() {
   const router = useRouter();
-  const [name, setName] = useState('');
+  const { user, isLoaded } = useUser();
   const [channel, setChannel] = useState('general');
   const [pin, setPin] = useState('');
   const [recent, setRecent] = useState<RecentChannel[]>([]);
@@ -25,38 +26,34 @@ export default function HomePage() {
   } | null>(null);
 
   useEffect(() => {
-    const storedName = localStorage.getItem('talkie:name');
-    if (storedName) setName(storedName);
     setRecent(getRecentChannels());
   }, []);
 
-  function go(targetChannel: string, displayName: string, pinValue: string) {
-    const cleanName = displayName.trim();
+  const isAdmin =
+    (user?.publicMetadata as { role?: string } | undefined)?.role === 'admin';
+
+  function go(targetChannel: string, pinValue: string) {
     const slug = targetChannel.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
-    if (!cleanName || !slug) return;
-    localStorage.setItem('talkie:name', cleanName);
+    if (!slug) return;
     const cleanPin = pinValue.trim();
     if (cleanPin) {
       setChannelPin(slug, cleanPin);
-      router.push(
-        `/channel/${slug}?name=${encodeURIComponent(cleanName)}&private=1`,
-      );
+      router.push(`/channel/${slug}?private=1`);
     } else {
-      router.push(`/channel/${slug}?name=${encodeURIComponent(cleanName)}`);
+      router.push(`/channel/${slug}`);
     }
   }
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
-    go(channel, name, pin);
+    go(channel, pin);
   }
 
   function clickRecent(c: RecentChannel) {
-    if (!name.trim()) return;
     if (c.private) {
       setPinPrompt({ channel: c.name, value: '', error: null });
     } else {
-      go(c.name, name, '');
+      go(c.name, '');
     }
   }
 
@@ -70,7 +67,7 @@ export default function HomePage() {
     const target = pinPrompt.channel;
     const value = pinPrompt.value;
     setPinPrompt(null);
-    go(target, name, value);
+    go(target, value);
   }
 
   function dropRecent(target: string) {
@@ -78,23 +75,43 @@ export default function HomePage() {
     setRecent(getRecentChannels());
   }
 
+  const greetingName =
+    user?.firstName || user?.username || user?.emailAddresses[0]?.emailAddress;
+
   return (
     <main className="min-h-dvh flex items-center justify-center bg-neutral-950 text-neutral-100 px-6 py-10">
       <div className="w-full max-w-sm space-y-6">
         <header className="flex items-center gap-3">
           <Logo size={44} />
-          <div>
+          <div className="min-w-0">
             <h1 className="text-2xl font-semibold leading-tight">Talkie</h1>
-            <p className="text-xs text-neutral-400">
-              Push-to-talk for teams
+            <p className="text-xs text-neutral-400 truncate">
+              {isLoaded && greetingName
+                ? `Signed in as ${greetingName}`
+                : 'Push-to-talk for teams'}
             </p>
           </div>
-          <Link
-            href="/settings"
-            className="ml-auto text-xs text-neutral-400 hover:text-neutral-100 underline-offset-2 hover:underline"
-          >
-            Settings
-          </Link>
+          <div className="ml-auto flex items-center gap-3">
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="text-xs text-emerald-300 hover:text-emerald-200 underline-offset-2 hover:underline"
+              >
+                Admin
+              </Link>
+            )}
+            <Link
+              href="/settings"
+              className="text-xs text-neutral-400 hover:text-neutral-100 underline-offset-2 hover:underline"
+            >
+              Settings
+            </Link>
+            <UserButton
+              appearance={{
+                elements: { avatarBox: 'w-7 h-7' },
+              }}
+            />
+          </div>
         </header>
 
         <IOSInstallHint />
@@ -104,19 +121,6 @@ export default function HomePage() {
           className="space-y-5 bg-neutral-900 rounded-2xl p-6 border border-neutral-800"
         >
           <label className="block space-y-2">
-            <span className="text-sm text-neutral-300">Your name</span>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Sam"
-              className="w-full rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2 text-base outline-none focus:border-neutral-500"
-              autoFocus
-              required
-            />
-          </label>
-
-          <label className="block space-y-2">
             <span className="text-sm text-neutral-300">Channel</span>
             <input
               type="text"
@@ -124,6 +128,7 @@ export default function HomePage() {
               onChange={(e) => setChannel(e.target.value)}
               placeholder="general"
               className="w-full rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2 text-base outline-none focus:border-neutral-500"
+              autoFocus
               required
             />
           </label>
@@ -169,8 +174,7 @@ export default function HomePage() {
                 >
                   <button
                     onClick={() => clickRecent(c)}
-                    disabled={!name.trim()}
-                    className="flex-1 text-left text-sm hover:text-emerald-300 disabled:text-neutral-500 flex items-center gap-2"
+                    className="flex-1 text-left text-sm hover:text-emerald-300 flex items-center gap-2"
                   >
                     {c.private && (
                       <LockIcon className="w-3 h-3 text-emerald-400 flex-shrink-0" />

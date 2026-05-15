@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto';
 import { AccessToken } from 'livekit-server-sdk';
 import { NextRequest, NextResponse } from 'next/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
+import { displayNameFor, userIsDisabled } from '@/lib/admin';
 
 type TokenRequest = {
   identity?: string;
@@ -16,10 +18,33 @@ function resolveRoom(room: string, pin: string | undefined): string {
   return `${room}__${digest.slice(0, 24)}`;
 }
 
-async function issue(input: TokenRequest) {
-  const identity = input.identity?.trim();
+async function issue(input: TokenRequest, req: NextRequest) {
+  let identity = input.identity?.trim();
+  let displayName = identity;
   const room = input.room?.trim();
   const pin = input.pin?.trim() || undefined;
+
+  // If the caller has a Clerk session (web), force the identity to their
+  // Clerk user ID so they can't impersonate. Native clients without sessions
+  // fall back to the requested identity for backward compat.
+  try {
+    const { userId } = await auth();
+    if (userId) {
+      const user = await currentUser();
+      if (user) {
+        if (userIsDisabled(user)) {
+          return NextResponse.json(
+            { error: 'This account is disabled' },
+            { status: 403 },
+          );
+        }
+        identity = user.id;
+        displayName = displayNameFor(user);
+      }
+    }
+  } catch {
+    // Not in a Clerk-protected route or session missing — continue as anonymous
+  }
 
   if (!identity || !room) {
     return NextResponse.json(
@@ -43,6 +68,7 @@ async function issue(input: TokenRequest) {
 
   const at = new AccessToken(apiKey, apiSecret, {
     identity,
+    name: displayName,
     ttl: '4h',
   });
 
@@ -55,16 +81,25 @@ async function issue(input: TokenRequest) {
   });
 
   const token = await at.toJwt();
-  return NextResponse.json({ token, wsUrl, private: Boolean(pin) });
+  return NextResponse.json({
+    token,
+    wsUrl,
+    private: Boolean(pin),
+    identity,
+    displayName,
+  });
 }
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  return issue({
-    identity: searchParams.get('identity') ?? undefined,
-    room: searchParams.get('room') ?? undefined,
-    pin: searchParams.get('pin') ?? undefined,
-  });
+  return issue(
+    {
+      identity: searchParams.get('identity') ?? undefined,
+      room: searchParams.get('room') ?? undefined,
+      pin: searchParams.get('pin') ?? undefined,
+    },
+    req,
+  );
 }
 
 export async function POST(req: NextRequest) {
@@ -74,5 +109,5 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
-  return issue(body);
+  return issue(body, req);
 }

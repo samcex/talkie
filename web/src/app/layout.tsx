@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
 import "./globals.css";
 import { ServiceWorkerRegister } from "./sw-register";
 
@@ -46,14 +48,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    <ClerkProvider
+      appearance={{
+        baseTheme: dark,
+        variables: {
+          colorPrimary: "#10b981",
+          colorBackground: "#0a0a0a",
+          colorInputBackground: "#171717",
+          colorInputText: "#f5f5f5",
+        },
+      }}
     >
-      <body className="min-h-full flex flex-col bg-neutral-950">
-        {children}
-        <ServiceWorkerRegister />
-      </body>
-    </html>
+      <html
+        lang="en"
+        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      >
+        <body className="min-h-full flex flex-col bg-neutral-950">
+          {children}
+          <ServiceWorkerRegister />
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
