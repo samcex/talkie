@@ -74,7 +74,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
 
-    implementation("io.livekit:livekit-android:2.13.1")
+    implementation("io.livekit:livekit-android:2.25.2")
 
     implementation("io.coil-kt:coil-compose:2.7.0")
 

@@ -17,9 +17,8 @@ class PttForegroundService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         ensureChannel()
-        val tapIntent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
-        }
+        val tapIntent = Intent(this, MainActivity::class.java)
+        tapIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
         val pi = PendingIntent.getActivity(
             this, 0, tapIntent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
