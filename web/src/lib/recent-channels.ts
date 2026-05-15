@@ -4,6 +4,7 @@ const MAX = 8;
 export type RecentChannel = {
   name: string;
   lastJoinedAt: number;
+  private?: boolean;
 };
 
 export function getRecentChannels(): RecentChannel[] {
@@ -21,10 +22,10 @@ export function getRecentChannels(): RecentChannel[] {
   }
 }
 
-export function rememberChannel(name: string) {
+export function rememberChannel(name: string, isPrivate = false) {
   if (typeof window === 'undefined') return;
   const current = getRecentChannels().filter((c) => c.name !== name);
-  current.unshift({ name, lastJoinedAt: Date.now() });
+  current.unshift({ name, lastJoinedAt: Date.now(), private: isPrivate });
   localStorage.setItem(KEY, JSON.stringify(current.slice(0, MAX)));
 }
 

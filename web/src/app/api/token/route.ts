@@ -1,10 +1,25 @@
+import { createHash } from 'node:crypto';
 import { AccessToken } from 'livekit-server-sdk';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const identity = searchParams.get('identity');
-  const room = searchParams.get('room');
+type TokenRequest = {
+  identity?: string;
+  room?: string;
+  pin?: string;
+};
+
+function resolveRoom(room: string, pin: string | undefined): string {
+  if (!pin) return room;
+  const digest = createHash('sha256')
+    .update(`${room}:${pin}`)
+    .digest('hex');
+  return `${room}__${digest.slice(0, 24)}`;
+}
+
+async function issue(input: TokenRequest) {
+  const identity = input.identity?.trim();
+  const room = input.room?.trim();
+  const pin = input.pin?.trim() || undefined;
 
   if (!identity || !room) {
     return NextResponse.json(
@@ -24,13 +39,15 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  const actualRoom = resolveRoom(room, pin);
+
   const at = new AccessToken(apiKey, apiSecret, {
     identity,
     ttl: '4h',
   });
 
   at.addGrant({
-    room,
+    room: actualRoom,
     roomJoin: true,
     canPublish: true,
     canSubscribe: true,
@@ -38,5 +55,24 @@ export async function GET(req: NextRequest) {
   });
 
   const token = await at.toJwt();
-  return NextResponse.json({ token, wsUrl });
+  return NextResponse.json({ token, wsUrl, private: Boolean(pin) });
+}
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  return issue({
+    identity: searchParams.get('identity') ?? undefined,
+    room: searchParams.get('room') ?? undefined,
+    pin: searchParams.get('pin') ?? undefined,
+  });
+}
+
+export async function POST(req: NextRequest) {
+  let body: TokenRequest = {};
+  try {
+    body = (await req.json()) as TokenRequest;
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+  return issue(body);
 }

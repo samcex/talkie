@@ -18,6 +18,7 @@ import {
 import { Logo } from '@/components/Logo';
 import { rememberChannel } from '@/lib/recent-channels';
 import { defaultSettings, loadSettings, type Settings } from '@/lib/settings';
+import { getChannelPin } from '@/lib/channel-pin';
 
 type ParticipantUi = {
   identity: string;
@@ -55,6 +56,7 @@ export default function ChannelPage() {
   const router = useRouter();
   const channelName = params?.name ?? 'general';
   const userName = search.get('name') ?? '';
+  const isPrivate = search.get('private') === '1';
 
   const roomRef = useRef<Room | null>(null);
   const localTrackRef = useRef<LocalAudioTrack | null>(null);
@@ -268,7 +270,7 @@ export default function ChannelPage() {
       .on(RoomEvent.ConnectionStateChanged, (s) => {
         setState(s);
         if (s === ConnectionState.Connected) {
-          rememberChannel(channelName);
+          rememberChannel(channelName, isPrivate);
         }
       })
       .on(RoomEvent.ParticipantConnected, (p: RemoteParticipant) => {
@@ -355,9 +357,16 @@ export default function ChannelPage() {
 
     (async () => {
       try {
-        const res = await fetch(
-          `/api/token?identity=${encodeURIComponent(userName)}&room=${encodeURIComponent(channelName)}`,
-        );
+        const pin = isPrivate ? getChannelPin(channelName) ?? '' : '';
+        const res = await fetch('/api/token', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            identity: userName,
+            room: channelName,
+            pin,
+          }),
+        });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
           throw new Error(body.error ?? `token request failed: ${res.status}`);
@@ -411,6 +420,7 @@ export default function ChannelPage() {
   }, [
     channelName,
     userName,
+    isPrivate,
     router,
     refreshParticipants,
     handleSpeakingChange,
@@ -536,9 +546,26 @@ export default function ChannelPage() {
         <Logo size={28} />
         <div className="min-w-0">
           <div className="text-[10px] uppercase tracking-wider text-neutral-500">
-            Channel
+            Channel{isPrivate && ' · private'}
           </div>
-          <div className="text-base font-semibold truncate">#{channelName}</div>
+          <div className="text-base font-semibold truncate flex items-center gap-1.5">
+            {isPrivate && (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0"
+              >
+                <rect x="4" y="11" width="16" height="10" rx="2" />
+                <path d="M8 11V8a4 4 0 1 1 8 0v3" />
+              </svg>
+            )}
+            #{channelName}
+          </div>
         </div>
         <div className="ml-auto flex items-center gap-3">
           <StatusDot state={state} />
