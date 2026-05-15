@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Talkie</string>
+    <string name="notification_channel_id">talkie_ptt</string>
+    <string name="notification_channel_name">Push-to-talk</string>
+    <string name="notification_title">Talkie is live</string>
+    <string name="notification_text">Connected to channel</string>
+</resources>
