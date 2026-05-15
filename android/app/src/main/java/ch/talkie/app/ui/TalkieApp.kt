@@ -18,8 +18,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -34,6 +38,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ch.talkie.app.ParticipantUi
@@ -105,6 +111,41 @@ private fun JoinScreen(state: TalkieState, viewModel: TalkieViewModel) {
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
+        Spacer(Modifier.height(16.dp))
+        OutlinedTextField(
+            value = state.pin,
+            onValueChange = viewModel::setPin,
+            label = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("PIN")
+                    Spacer(Modifier.size(6.dp))
+                    Text(
+                        "(optional)",
+                        color = Color(0xFF737373),
+                        fontSize = 12.sp,
+                    )
+                    if (state.isPrivate) {
+                        Spacer(Modifier.size(6.dp))
+                        Icon(
+                            imageVector = Icons.Filled.Lock,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(12.dp),
+                        )
+                    }
+                }
+            },
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Set a PIN to make this channel private. Only people with the same PIN join the same room.",
+            color = Color(0xFF737373),
+            fontSize = 11.sp,
+        )
 
         if (state.error != null) {
             Spacer(Modifier.height(16.dp))
@@ -126,7 +167,11 @@ private fun JoinScreen(state: TalkieState, viewModel: TalkieViewModel) {
                 .fillMaxWidth()
                 .height(56.dp),
         ) {
-            Text("Connect", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text(
+                if (state.isPrivate) "Join private channel" else "Connect",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
         }
 
         if (!state.micPermissionGranted) {
@@ -155,16 +200,27 @@ private fun ChannelScreen(state: TalkieState, viewModel: TalkieViewModel) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "Channel",
+                    if (state.isPrivate) "Channel · private" else "Channel",
                     color = Color(0xFF737373),
                     fontSize = 12.sp,
                 )
-                Text(
-                    "#${state.channel}",
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (state.isPrivate) {
+                        Icon(
+                            imageVector = Icons.Filled.Lock,
+                            contentDescription = "Private",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(Modifier.size(6.dp))
+                    }
+                    Text(
+                        "#${state.channel}",
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
             }
             StatusBadge(state.status)
             Spacer(Modifier.size(16.dp))

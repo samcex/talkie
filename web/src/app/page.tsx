@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useState } from 'react';
 import { Logo } from '@/components/Logo';
+import { IOSInstallHint } from '@/components/IOSInstallHint';
 import {
   forgetChannel,
   getRecentChannels,
@@ -95,6 +96,8 @@ export default function HomePage() {
             Settings
           </Link>
         </header>
+
+        <IOSInstallHint />
 
         <form
           onSubmit={onSubmit}

@@ -21,7 +21,6 @@ import org.json.JSONObject
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
-import java.net.URLEncoder
 
 data class ParticipantUi(
     val identity: String,
@@ -32,12 +31,15 @@ data class ParticipantUi(
 data class TalkieState(
     val name: String = "",
     val channel: String = "general",
+    val pin: String = "",
     val status: Status = Status.Idle,
     val transmitting: Boolean = false,
     val participants: List<ParticipantUi> = emptyList(),
     val error: String? = null,
     val micPermissionGranted: Boolean = false,
 ) {
+    val isPrivate: Boolean get() = pin.isNotBlank()
+
     enum class Status { Idle, Connecting, Connected, Disconnected }
 }
 
@@ -50,6 +52,7 @@ class TalkieViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setName(value: String) = _state.update { it.copy(name = value) }
     fun setChannel(value: String) = _state.update { it.copy(channel = value) }
+    fun setPin(value: String) = _state.update { it.copy(pin = value) }
 
     fun onMicPermissionResult(granted: Boolean) {
         _state.update { it.copy(micPermissionGranted = granted) }
@@ -67,7 +70,7 @@ class TalkieViewModel(app: Application) : AndroidViewModel(app) {
 
         viewModelScope.launch {
             try {
-                val (wsUrl, token) = fetchToken(s.name, s.channel)
+                val (wsUrl, token) = fetchToken(s.name, s.channel, s.pin)
                 val r = LiveKit.create(getApplication())
                 room = r
 
@@ -148,23 +151,32 @@ class TalkieViewModel(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(participants = list) }
     }
 
-    private suspend fun fetchToken(identity: String, channel: String): Pair<String, String> =
+    private suspend fun fetchToken(
+        identity: String,
+        channel: String,
+        pin: String,
+    ): Pair<String, String> =
         withContext(Dispatchers.IO) {
             val base = BuildConfig.TOKEN_BASE_URL.trimEnd('/')
-            val url = URL(
-                "$base/api/token?identity=${URLEncoder.encode(identity, "UTF-8")}" +
-                    "&room=${URLEncoder.encode(channel, "UTF-8")}",
-            )
+            val url = URL("$base/api/token")
             val conn = url.openConnection() as HttpURLConnection
             conn.connectTimeout = 10_000
             conn.readTimeout = 10_000
-            conn.requestMethod = "GET"
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("content-type", "application/json")
+            val requestBody = JSONObject().apply {
+                put("identity", identity)
+                put("room", channel)
+                if (pin.isNotBlank()) put("pin", pin)
+            }.toString()
             try {
+                conn.outputStream.use { it.write(requestBody.toByteArray(Charsets.UTF_8)) }
                 val code = conn.responseCode
-                val body = (if (code in 200..299) conn.inputStream else conn.errorStream)
+                val resp = (if (code in 200..299) conn.inputStream else conn.errorStream)
                     .bufferedReader().use { it.readText() }
-                if (code !in 200..299) throw IOException("token request failed: $code $body")
-                val json = JSONObject(body)
+                if (code !in 200..299) throw IOException("token request failed: $code $resp")
+                val json = JSONObject(resp)
                 json.getString("wsUrl") to json.getString("token")
             } finally {
                 conn.disconnect()
