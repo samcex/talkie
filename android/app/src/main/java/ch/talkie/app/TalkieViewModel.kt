@@ -1,15 +1,27 @@
 package ch.talkie.app
 
 import android.app.Application
+import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import ch.talkie.app.data.Persistence
+import ch.talkie.app.data.RecentChannel
+import ch.talkie.app.data.TalkieSettings
 import io.livekit.android.LiveKit
 import io.livekit.android.events.RoomEvent
 import io.livekit.android.events.collect
 import io.livekit.android.room.Room
 import io.livekit.android.room.participant.Participant
+import io.livekit.android.room.participant.RemoteParticipant
+import io.livekit.android.room.track.RemoteAudioTrack
+import io.livekit.android.room.track.Track
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,12 +33,24 @@ import org.json.JSONObject
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.UUID
 
 data class ParticipantUi(
     val identity: String,
     val isLocal: Boolean,
     val isSpeaking: Boolean,
+    val volume: Float,
+    val muted: Boolean,
 )
+
+data class ChatMessage(
+    val id: String,
+    val from: String,
+    val text: String,
+    val timestamp: Long,
+)
+
+enum class TalkieTab { People, Chat, Replays }
 
 data class TalkieState(
     val name: String = "",
@@ -37,6 +61,13 @@ data class TalkieState(
     val participants: List<ParticipantUi> = emptyList(),
     val error: String? = null,
     val micPermissionGranted: Boolean = false,
+    val tab: TalkieTab = TalkieTab.People,
+    val messages: List<ChatMessage> = emptyList(),
+    val unreadChat: Int = 0,
+    val draft: String = "",
+    val settings: TalkieSettings = TalkieSettings(),
+    val recents: List<RecentChannel> = emptyList(),
+    val inSettings: Boolean = false,
 ) {
     val isPrivate: Boolean get() = pin.isNotBlank()
 
@@ -49,10 +80,62 @@ class TalkieViewModel(app: Application) : AndroidViewModel(app) {
     val state: StateFlow<TalkieState> = _state.asStateFlow()
 
     private var room: Room? = null
+    private val remoteTracks = mutableMapOf<String, RemoteAudioTrack>()
+    private val mixer = mutableMapOf<String, MixerEntry>()
+    private var toneGenerator: ToneGenerator? = null
+
+    init {
+        val ctx = app.applicationContext
+        _state.update {
+            it.copy(
+                name = Persistence.loadLastName(ctx),
+                settings = Persistence.loadSettings(ctx),
+                recents = Persistence.loadRecents(ctx),
+            )
+        }
+    }
 
     fun setName(value: String) = _state.update { it.copy(name = value) }
     fun setChannel(value: String) = _state.update { it.copy(channel = value) }
     fun setPin(value: String) = _state.update { it.copy(pin = value) }
+    fun setDraft(value: String) = _state.update { it.copy(draft = value) }
+
+    fun selectTab(tab: TalkieTab) {
+        _state.update {
+            it.copy(
+                tab = tab,
+                unreadChat = if (tab == TalkieTab.Chat) 0 else it.unreadChat,
+            )
+        }
+    }
+
+    fun openSettings() = _state.update { it.copy(inSettings = true) }
+    fun closeSettings() = _state.update { it.copy(inSettings = false) }
+
+    fun updateSettings(s: TalkieSettings) {
+        Persistence.saveSettings(getApplication(), s)
+        _state.update { it.copy(settings = s) }
+        // re-apply output volume scaling
+        remoteTracks.forEach { (id, track) ->
+            val entry = mixer[id] ?: MixerEntry()
+            applyVolume(track, entry, s.outputVolume)
+        }
+    }
+
+    fun joinRecent(recent: RecentChannel, pinIfPrivate: String) {
+        _state.update {
+            it.copy(
+                channel = recent.name,
+                pin = if (recent.isPrivate) pinIfPrivate else "",
+            )
+        }
+        connect()
+    }
+
+    fun forgetRecent(name: String) {
+        Persistence.forgetChannel(getApplication(), name)
+        _state.update { it.copy(recents = Persistence.loadRecents(getApplication())) }
+    }
 
     fun onMicPermissionResult(granted: Boolean) {
         _state.update { it.copy(micPermissionGranted = granted) }
@@ -65,6 +148,7 @@ class TalkieViewModel(app: Application) : AndroidViewModel(app) {
             _state.update { it.copy(error = "Microphone permission is required") }
             return
         }
+        Persistence.saveLastName(getApplication(), s.name.trim())
 
         _state.update { it.copy(status = TalkieState.Status.Connecting, error = null) }
 
@@ -76,23 +160,24 @@ class TalkieViewModel(app: Application) : AndroidViewModel(app) {
 
                 viewModelScope.launch {
                     r.events.collect { event ->
-                        when (event) {
-                            is RoomEvent.ParticipantConnected,
-                            is RoomEvent.ParticipantDisconnected,
-                            is RoomEvent.ActiveSpeakersChanged,
-                            is RoomEvent.TrackMuted,
-                            is RoomEvent.TrackUnmuted -> refreshParticipants(r)
-                            else -> Unit
-                        }
+                        handleRoomEvent(r, event)
                     }
                 }
 
                 r.connect(wsUrl, token)
                 r.localParticipant.setMicrophoneEnabled(false)
 
-                startPttService()
-                _state.update { it.copy(status = TalkieState.Status.Connected) }
+                r.remoteParticipants.values.forEach(::wireParticipant)
+
+                Persistence.rememberChannel(getApplication(), s.channel, s.isPrivate)
+                _state.update {
+                    it.copy(
+                        status = TalkieState.Status.Connected,
+                        recents = Persistence.loadRecents(getApplication()),
+                    )
+                }
                 refreshParticipants(r)
+                startPttService()
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
@@ -102,6 +187,139 @@ class TalkieViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         }
+    }
+
+    private fun handleRoomEvent(r: Room, event: RoomEvent) {
+        when (event) {
+            is RoomEvent.ParticipantConnected -> {
+                wireParticipant(event.participant as RemoteParticipant)
+                refreshParticipants(r)
+            }
+            is RoomEvent.ParticipantDisconnected -> {
+                mixer.remove(event.participant.identity?.value)
+                remoteTracks.remove(event.participant.identity?.value)
+                refreshParticipants(r)
+            }
+            is RoomEvent.TrackSubscribed -> {
+                val track = event.track
+                if (track is RemoteAudioTrack) {
+                    val id = event.participant.identity?.value ?: return
+                    remoteTracks[id] = track
+                    val entry = mixer.getOrPut(id) { MixerEntry() }
+                    applyVolume(track, entry, _state.value.settings.outputVolume)
+                }
+            }
+            is RoomEvent.TrackUnsubscribed -> {
+                val id = event.participant.identity?.value ?: return
+                if (event.track is RemoteAudioTrack) remoteTracks.remove(id)
+            }
+            is RoomEvent.ActiveSpeakersChanged -> {
+                refreshParticipants(r)
+            }
+            is RoomEvent.TrackMuted, is RoomEvent.TrackUnmuted -> {
+                refreshParticipants(r)
+            }
+            is RoomEvent.DataReceived -> {
+                onData(event.data, event.participant)
+            }
+            else -> Unit
+        }
+    }
+
+    private fun wireParticipant(p: RemoteParticipant) {
+        viewModelScope.launch {
+            p.events.collect { event ->
+                if (event is io.livekit.android.events.ParticipantEvent.SpeakingChanged) {
+                    onSpeakingChanged(
+                        p.identity?.value ?: return@collect,
+                        event.isSpeaking,
+                    )
+                }
+            }
+        }
+    }
+
+    private fun onSpeakingChanged(identity: String, speaking: Boolean) {
+        val r = room ?: return
+        if (speaking) {
+            val s = _state.value.settings
+            if (s.beepOnIncoming) playBeep()
+            if (s.vibrateOnIncoming) vibrate()
+        }
+        refreshParticipants(r)
+    }
+
+    private fun onData(payload: ByteArray, participant: Participant?) {
+        try {
+            val text = String(payload, Charsets.UTF_8)
+            val obj = JSONObject(text)
+            if (obj.optString("type") == "chat") {
+                val from = participant?.identity?.value ?: obj.optString("from", "(unknown)")
+                val msg = ChatMessage(
+                    id = UUID.randomUUID().toString(),
+                    from = from,
+                    text = obj.optString("text"),
+                    timestamp = obj.optLong("ts", System.currentTimeMillis()),
+                )
+                _state.update {
+                    it.copy(
+                        messages = it.messages + msg,
+                        unreadChat = if (it.tab == TalkieTab.Chat) 0 else it.unreadChat + 1,
+                    )
+                }
+            }
+        } catch (_: Exception) {}
+    }
+
+    fun sendMessage() {
+        val text = _state.value.draft.trim()
+        if (text.isEmpty()) return
+        val r = room ?: return
+        if (_state.value.status != TalkieState.Status.Connected) return
+        viewModelScope.launch {
+            val payload = JSONObject()
+                .put("type", "chat")
+                .put("text", text)
+                .put("from", _state.value.name)
+                .put("ts", System.currentTimeMillis())
+                .toString()
+                .toByteArray(Charsets.UTF_8)
+            try {
+                r.localParticipant.publishData(payload)
+                _state.update {
+                    it.copy(
+                        messages = it.messages + ChatMessage(
+                            id = UUID.randomUUID().toString(),
+                            from = it.name,
+                            text = text,
+                            timestamp = System.currentTimeMillis(),
+                        ),
+                        draft = "",
+                    )
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
+    fun setParticipantVolume(identity: String, volume: Float) {
+        val entry = mixer.getOrPut(identity) { MixerEntry() }.copy(volume = volume)
+        mixer[identity] = entry
+        remoteTracks[identity]?.let {
+            applyVolume(it, entry, _state.value.settings.outputVolume)
+        }
+        val r = room ?: return
+        refreshParticipants(r)
+    }
+
+    fun toggleMute(identity: String) {
+        val entry = mixer.getOrPut(identity) { MixerEntry() }
+        val next = entry.copy(muted = !entry.muted)
+        mixer[identity] = next
+        remoteTracks[identity]?.let {
+            applyVolume(it, next, _state.value.settings.outputVolume)
+        }
+        val r = room ?: return
+        refreshParticipants(r)
     }
 
     fun startTalking() {
@@ -124,31 +342,82 @@ class TalkieViewModel(app: Application) : AndroidViewModel(app) {
     fun disconnect() {
         room?.disconnect()
         room = null
+        remoteTracks.clear()
+        mixer.clear()
         stopPttService()
         _state.update {
             it.copy(
                 status = TalkieState.Status.Disconnected,
                 participants = emptyList(),
+                messages = emptyList(),
+                unreadChat = 0,
                 transmitting = false,
+                pin = "",
             )
         }
     }
 
     private fun refreshParticipants(r: Room) {
         val list = mutableListOf<ParticipantUi>()
+        val localId = r.localParticipant.identity?.value ?: _state.value.name
         list += ParticipantUi(
-            identity = r.localParticipant.identity?.value ?: _state.value.name,
+            identity = localId,
             isLocal = true,
             isSpeaking = r.localParticipant.isSpeaking,
+            volume = 1f,
+            muted = false,
         )
-        r.remoteParticipants.values.forEach { p: Participant ->
+        r.remoteParticipants.values.forEach { p ->
+            val id = p.identity?.value ?: return@forEach
+            val entry = mixer[id] ?: MixerEntry()
             list += ParticipantUi(
-                identity = p.identity?.value ?: "(unknown)",
+                identity = id,
                 isLocal = false,
                 isSpeaking = p.isSpeaking,
+                volume = entry.volume,
+                muted = entry.muted,
             )
         }
         _state.update { it.copy(participants = list) }
+    }
+
+    private fun applyVolume(
+        track: RemoteAudioTrack,
+        entry: MixerEntry,
+        outputVolume: Float,
+    ) {
+        val v = if (entry.muted) 0f else (entry.volume * outputVolume).coerceIn(0f, 1f)
+        try {
+            track.setVolume(v.toDouble())
+        } catch (_: Exception) {}
+    }
+
+    private fun playBeep() {
+        try {
+            if (toneGenerator == null) {
+                toneGenerator = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 60)
+            }
+            toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP, 80)
+        } catch (_: Exception) {}
+    }
+
+    private fun vibrate() {
+        try {
+            val ctx = getApplication<Application>()
+            val vibrator: Vibrator? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val mgr = ctx.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                mgr.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                ctx.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator?.vibrate(VibrationEffect.createOneShot(40, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator?.vibrate(40)
+            }
+        } catch (_: Exception) {}
     }
 
     private suspend fun fetchToken(
@@ -200,7 +469,10 @@ class TalkieViewModel(app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         room?.disconnect()
+        toneGenerator?.release()
         stopPttService()
         super.onCleared()
     }
+
+    private data class MixerEntry(val volume: Float = 1f, val muted: Boolean = false)
 }
