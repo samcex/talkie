@@ -10,11 +10,6 @@ on:
     paths:
       - "android/**"
   workflow_dispatch:
-    inputs:
-      token_base_url:
-        description: "Base URL the APK will hit for token issuance (e.g. https://talkie.netlify.app). Leave blank to use the default in build.gradle.kts."
-        required: false
-        default: ""
 
 permissions:
   contents: read
@@ -51,12 +46,14 @@ jobs:
 
       - name: Build debug APK
         working-directory: android
+        env:
+          TALKIE_TOKEN_BASE_URL: ${{ vars.TALKIE_TOKEN_BASE_URL }}
         run: |
-          ARGS=""
-          if [ -n "${{ inputs.token_base_url }}" ]; then
-            ARGS="-PTALKIE_TOKEN_BASE_URL=${{ inputs.token_base_url }}"
+          if [ -n "$TALKIE_TOKEN_BASE_URL" ]; then
+            ./gradlew :app:assembleDebug --no-daemon -PTALKIE_TOKEN_BASE_URL="$TALKIE_TOKEN_BASE_URL"
+          else
+            ./gradlew :app:assembleDebug --no-daemon
           fi
-          ./gradlew :app:assembleDebug --no-daemon $ARGS
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
