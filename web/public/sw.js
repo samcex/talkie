@@ -1,5 +1,14 @@
-const CACHE_VERSION = "talkie-v1";
-const CORE_ASSETS = ["/", "/manifest.webmanifest", "/icon.svg"];
+const CACHE_VERSION = "talkie-v2";
+const CORE_ASSETS = [
+  "/",
+  "/offline.html",
+  "/manifest.webmanifest",
+  "/icon.svg",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/icon-maskable-512.png",
+  "/apple-touch-icon.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -33,6 +42,25 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/api/")) return;
   if (url.pathname.startsWith("/_next/data/")) return;
+
+  if (req.mode === "navigate") {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res && res.status === 200) {
+            const clone = res.clone();
+            caches.open(CACHE_VERSION).then((c) => c.put(req, clone));
+          }
+          return res;
+        })
+        .catch(() =>
+          caches
+            .match(req)
+            .then((cached) => cached || caches.match("/offline.html")),
+        ),
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(req).then((cached) => {
