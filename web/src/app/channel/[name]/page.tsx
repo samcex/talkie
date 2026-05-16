@@ -69,6 +69,8 @@ export default function ChannelPage() {
 
   const roomRef = useRef<Room | null>(null);
   const localTrackRef = useRef<LocalAudioTrack | null>(null);
+  const micSetupPromiseRef = useRef<Promise<LocalAudioTrack> | null>(null);
+  const wantsToTalkRef = useRef(false);
   const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
   const remoteTracksRef = useRef<Map<string, RemoteAudioTrack>>(new Map());
   const participantNamesRef = useRef<Map<string, string>>(new Map());
@@ -408,17 +410,6 @@ export default function ChannelPage() {
 
         await room.connect(wsUrl, token);
 
-        const audioTrack = await createLocalAudioTrack({
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        });
-        localTrackRef.current = audioTrack;
-        await room.localParticipant.publishTrack(audioTrack, {
-          source: Track.Source.Microphone,
-        });
-        await audioTrack.mute();
-
         room.remoteParticipants.forEach((p) => {
           p.on('isSpeakingChanged', (speaking) =>
             handleSpeakingChange(p.identity, speaking),
@@ -434,7 +425,10 @@ export default function ChannelPage() {
 
     return () => {
       cancelled = true;
+      wantsToTalkRef.current = false;
       localTrackRef.current?.stop();
+      localTrackRef.current = null;
+      micSetupPromiseRef.current = null;
       audioElementsRef.current.forEach((el) => el.remove());
       audioElementsRef.current.clear();
       remoteTracksRef.current.clear();
@@ -460,14 +454,63 @@ export default function ChannelPage() {
     finishRecording,
   ]);
 
-  const startTalking = useCallback(async () => {
-    const track = localTrackRef.current;
-    if (!track || state !== ConnectionState.Connected) return;
-    await track.unmute();
-    setTransmitting(true);
+  const ensureLocalAudioTrack = useCallback(async () => {
+    const existing = localTrackRef.current;
+    if (existing) return existing;
+
+    const room = roomRef.current;
+    if (!room || state !== ConnectionState.Connected) {
+      throw new Error('Not connected');
+    }
+
+    if (!micSetupPromiseRef.current) {
+      micSetupPromiseRef.current = (async () => {
+        const audioTrack = await createLocalAudioTrack({
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        });
+        await room.localParticipant.publishTrack(audioTrack, {
+          source: Track.Source.Microphone,
+        });
+        await audioTrack.mute();
+        localTrackRef.current = audioTrack;
+        return audioTrack;
+      })().finally(() => {
+        micSetupPromiseRef.current = null;
+      });
+    }
+
+    return micSetupPromiseRef.current;
   }, [state]);
 
+  const startTalking = useCallback(async () => {
+    if (state !== ConnectionState.Connected) return;
+    wantsToTalkRef.current = true;
+    setError(null);
+
+    try {
+      const track = await ensureLocalAudioTrack();
+      if (!wantsToTalkRef.current) {
+        await track.mute();
+        setTransmitting(false);
+        return;
+      }
+      await track.unmute();
+      setTransmitting(true);
+    } catch (err) {
+      wantsToTalkRef.current = false;
+      setTransmitting(false);
+      const msg =
+        err instanceof Error
+          ? err.message
+          : 'Microphone access was not allowed';
+      setError(msg);
+    }
+  }, [ensureLocalAudioTrack, state]);
+
   const stopTalking = useCallback(async () => {
+    wantsToTalkRef.current = false;
     const track = localTrackRef.current;
     if (!track) return;
     await track.mute();
