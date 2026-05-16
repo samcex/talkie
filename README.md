@@ -32,15 +32,22 @@ talkie/
    ```
 4. Open `http://localhost:3000` in two tabs, join the same channel, hold TALK.
 
-## Web — deploy (Netlify)
+## Web — deploy (Vercel)
 
 1. Push this repo to GitHub (already done).
-2. In Netlify → **Add new site → Import from Git → talkie**.
-3. Build settings (Netlify auto-detects):
-   - **Base directory**: `web`
-   - **Build command**: `npm run build`
-   - **Publish directory**: `web/.next`
-4. Add the same three env vars (`LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `NEXT_PUBLIC_LIVEKIT_URL`) in **Site settings → Environment variables**.
+2. In Vercel → **Add New → Project → talkie**.
+3. The root `vercel.json` builds the Next.js app from `web/`.
+4. Add the variables from `web/.env.local.example` in **Project Settings → Environment Variables**:
+   - `LIVEKIT_API_KEY`
+   - `LIVEKIT_API_SECRET`
+   - `NEXT_PUBLIC_LIVEKIT_URL`
+   - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+   - `CLERK_SECRET_KEY`
+   - `NEXT_PUBLIC_CLERK_SIGN_IN_URL`
+   - `NEXT_PUBLIC_CLERK_SIGN_UP_URL`
+   - `NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL`
+   - `NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL`
+   - `ADMIN_EMAILS`
 5. Deploy.
 
 ## Android
