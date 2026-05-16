@@ -23,6 +23,7 @@ import { getChannelPin } from '@/lib/channel-pin';
 
 type ParticipantUi = {
   identity: string;
+  displayName: string;
   isLocal: boolean;
   isSpeaking: boolean;
   volume: number;
@@ -70,6 +71,7 @@ export default function ChannelPage() {
   const localTrackRef = useRef<LocalAudioTrack | null>(null);
   const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
   const remoteTracksRef = useRef<Map<string, RemoteAudioTrack>>(new Map());
+  const participantNamesRef = useRef<Map<string, string>>(new Map());
   const recordersRef = useRef<
     Map<
       string,
@@ -100,8 +102,14 @@ export default function ChannelPage() {
 
   const refreshParticipants = useCallback((room: Room) => {
     const list: ParticipantUi[] = [];
+    const localDisplayName = participantDisplayName(room.localParticipant);
+    participantNamesRef.current.set(
+      room.localParticipant.identity,
+      localDisplayName,
+    );
     list.push({
       identity: room.localParticipant.identity,
+      displayName: localDisplayName,
       isLocal: true,
       isSpeaking: room.localParticipant.isSpeaking,
       volume: 1,
@@ -109,8 +117,11 @@ export default function ChannelPage() {
     });
     room.remoteParticipants.forEach((p) => {
       const existing = participantStateRef.current.get(p.identity);
+      const displayName = participantDisplayName(p);
+      participantNamesRef.current.set(p.identity, displayName);
       list.push({
         identity: p.identity,
+        displayName,
         isLocal: false,
         isSpeaking: p.isSpeaking,
         volume: existing?.volume ?? settingsRef.current.outputVolume,
@@ -178,7 +189,7 @@ export default function ChannelPage() {
         }
         beep();
         vibrate();
-        maybeNotify(identity);
+        maybeNotify(participantNamesRef.current.get(identity) ?? identity);
       } else {
         finishRecording(identity);
       }
@@ -220,9 +231,10 @@ export default function ChannelPage() {
         if (durationMs < 350) return;
         const blob = new Blob(entry.chunks, { type: entry.mimeType });
         const url = URL.createObjectURL(blob);
+        const from = participantNamesRef.current.get(identity) ?? identity;
         setReplays((prev) => {
           const next: Replay[] = [
-            { id: cryptoRandom(), from: identity, ts: entry.startedAt, durationMs, url },
+            { id: cryptoRandom(), from, ts: entry.startedAt, durationMs, url },
             ...prev,
           ];
           while (next.length > MAX_REPLAYS) {
@@ -283,6 +295,7 @@ export default function ChannelPage() {
         }
       })
       .on(RoomEvent.ParticipantConnected, (p: RemoteParticipant) => {
+        participantNamesRef.current.set(p.identity, participantDisplayName(p));
         p.on('isSpeakingChanged', (speaking) =>
           handleSpeakingChange(p.identity, speaking),
         );
@@ -291,6 +304,7 @@ export default function ChannelPage() {
       .on(RoomEvent.ParticipantDisconnected, (p: RemoteParticipant) => {
         finishRecording(p.identity);
         participantStateRef.current.delete(p.identity);
+        participantNamesRef.current.delete(p.identity);
         refreshParticipants(room);
       })
       .on(
@@ -345,8 +359,13 @@ export default function ChannelPage() {
           try {
             const parsed = JSON.parse(decoder.decode(payload)) as DataPayload;
             if (parsed.type === 'chat' && typeof parsed.text === 'string') {
-              const from = participant?.identity ?? parsed.from ?? '(unknown)';
-              if (from === userId) {
+              const senderIdentity = participant?.identity ?? '';
+              const from =
+                participant?.name?.trim() ||
+                parsed.from ||
+                senderIdentity ||
+                '(unknown)';
+              if (senderIdentity === userId) {
                 // echo of our own message (we add locally on send); skip
                 return;
               }
@@ -707,6 +726,13 @@ function cryptoRandom(): string {
   return Math.random().toString(36).slice(2);
 }
 
+function participantDisplayName(participant: {
+  identity: string;
+  name?: string;
+}): string {
+  return participant.name?.trim() || participant.identity;
+}
+
 function StatusDot({ state }: { state: ConnectionState }) {
   const map: Record<ConnectionState, { color: string; label: string }> = {
     [ConnectionState.Disconnected]: {
@@ -793,7 +819,7 @@ function PeoplePanel({
               }`}
             />
             <span className="font-medium text-sm flex-1 truncate">
-              {p.identity}
+              {p.displayName}
               {p.isLocal && (
                 <span className="ml-2 text-[10px] text-neutral-500">
                   (you)
