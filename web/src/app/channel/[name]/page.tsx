@@ -617,141 +617,227 @@ export default function ChannelPage() {
   const connected = state === ConnectionState.Connected;
 
   return (
-    <main className="min-h-dvh flex flex-col bg-neutral-950 text-neutral-100">
-      <header className="border-b border-neutral-800 px-4 py-3 flex items-center gap-3">
-        <Logo size={28} />
-        <div className="min-w-0">
-          <div className="text-[10px] uppercase tracking-wider text-neutral-500">
-            Channel{isPrivate && ' · private'}
+    <main className="min-h-dvh talkie-shell flex justify-center text-zinc-100">
+      <div className="talkie-phone relative flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-zinc-950">
+        <div className="talkie-noise" />
+        <header className="glass-panel relative z-20 flex shrink-0 items-center justify-between rounded-b-[2rem] px-5 pb-4 pt-10">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-900 inset-border">
+              <Logo size={30} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-500">
+                Channel{isPrivate && ' Private'}
+              </div>
+              <div className="flex min-w-0 items-center gap-2">
+                {isPrivate && <LockIcon className="h-3.5 w-3.5 flex-shrink-0 text-emerald-400" />}
+                <h1 className="truncate text-base font-black uppercase tracking-tight text-white">
+                  {channelName}
+                </h1>
+              </div>
+            </div>
           </div>
-          <div className="text-base font-semibold truncate flex items-center gap-1.5">
-            {isPrivate && (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
+          <div className="flex items-center gap-2">
+            <StatusDot state={state} />
+            <Link
+              href="/settings"
+              aria-label="Settings"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-zinc-400 transition active:scale-95 inset-border hover:text-white"
+            >
+              <SettingsIcon className="h-4 w-4" />
+            </Link>
+            <button
+              onClick={() => router.push('/')}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-zinc-400 transition active:scale-95 inset-border hover:text-white"
+              aria-label="Leave channel"
+            >
+              <LeaveIcon className="h-4 w-4" />
+            </button>
+          </div>
+        </header>
+
+        {error && (
+          <div className="relative z-20 border-b border-red-800/60 bg-red-950/80 px-4 py-3 text-sm text-red-200">
+            {error}
+          </div>
+        )}
+
+        <section className="relative z-10 flex-1 overflow-y-auto no-scrollbar px-4 pb-44 pt-5">
+          <div className="machined-panel relative overflow-hidden rounded-[2rem] p-5">
+            <svg
+              className="pointer-events-none absolute inset-0 h-full w-full opacity-10"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path
+                d="M-10,50 Q40,20 100,50 T300,50"
                 fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0"
-              >
-                <rect x="4" y="11" width="16" height="10" rx="2" />
-                <path d="M8 11V8a4 4 0 1 1 8 0v3" />
-              </svg>
-            )}
-            #{channelName}
+                stroke="#10b981"
+                strokeWidth="0.5"
+              />
+              <path
+                d="M-10,80 Q60,120 150,80 T350,80"
+                fill="none"
+                stroke="#71717a"
+                strokeWidth="0.5"
+              />
+            </svg>
+            <div className="relative z-10 flex items-start justify-between gap-4">
+              <div>
+                <div className="mb-1 flex items-center gap-2">
+                  <span
+                    className={`h-2 w-2 rounded-full ${
+                      connected
+                        ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]'
+                        : 'bg-zinc-600'
+                    }`}
+                  />
+                  <span className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400">
+                    {connected ? 'Encrypted Link' : 'Link Pending'}
+                  </span>
+                </div>
+                <div className="text-3xl font-black uppercase tracking-tight text-white">
+                  {channelName}
+                </div>
+              </div>
+              <div className="rounded-xl bg-zinc-800/80 p-2 text-zinc-400 inset-border">
+                {isPrivate ? (
+                  <LockIcon className="h-5 w-5" />
+                ) : (
+                  <HashIcon className="h-5 w-5" />
+                )}
+              </div>
+            </div>
+            <div className="relative z-10 mt-6 grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                  Members
+                </div>
+                <div className="font-mono text-lg text-zinc-200">
+                  {participants.length.toString().padStart(2, '0')}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                  Mode
+                </div>
+                <div className="font-mono text-lg text-zinc-200">
+                  {isPrivate ? 'PIN' : 'OPEN'}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="ml-auto flex items-center gap-3">
-          <StatusDot state={state} />
-          <Link
-            href="/settings"
-            className="text-xs text-neutral-400 hover:text-neutral-100"
-          >
-            Settings
-          </Link>
-          <button
-            onClick={() => router.push('/')}
-            className="text-xs text-neutral-400 hover:text-neutral-100"
-          >
-            Leave
-          </button>
-        </div>
-      </header>
 
-      {error && (
-        <div className="bg-red-950 border-b border-red-800 text-red-200 px-4 py-3 text-sm">
-          {error}
-        </div>
-      )}
+          <nav className="mt-5 grid grid-cols-3 gap-2 rounded-2xl bg-zinc-900/70 p-1 inset-border">
+            <TabButton active={tab === 'people'} onClick={() => selectTab('people')}>
+              People <Count value={participants.length} />
+            </TabButton>
+            <TabButton active={tab === 'chat'} onClick={() => selectTab('chat')}>
+              Chat
+              {unreadChat > 0 && <Badge value={unreadChat} />}
+            </TabButton>
+            <TabButton active={tab === 'replays'} onClick={() => selectTab('replays')}>
+              Replays
+              {unreadReplays > 0 && <Badge value={unreadReplays} />}
+            </TabButton>
+          </nav>
 
-      <nav className="border-b border-neutral-800 flex">
-        <TabButton
-          active={tab === 'people'}
-          onClick={() => selectTab('people')}
-        >
-          People <Count value={participants.length} />
-        </TabButton>
-        <TabButton active={tab === 'chat'} onClick={() => selectTab('chat')}>
-          Chat
-          {unreadChat > 0 && (
-            <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-emerald-500 text-neutral-950 text-[10px] font-bold px-1">
-              {unreadChat}
-            </span>
-          )}
-        </TabButton>
-        <TabButton
-          active={tab === 'replays'}
-          onClick={() => selectTab('replays')}
-        >
-          Replays
-          {unreadReplays > 0 && (
-            <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-emerald-500 text-neutral-950 text-[10px] font-bold px-1">
-              {unreadReplays}
-            </span>
-          )}
-        </TabButton>
-      </nav>
+          <div className="mt-5">
+            {tab === 'people' && (
+              <PeoplePanel
+                participants={participants}
+                onVolumeChange={setParticipantVolume}
+                onToggleMute={toggleMute}
+              />
+            )}
+            {tab === 'chat' && (
+              <ChatPanel
+                messages={messages}
+                draft={draft}
+                setDraft={setDraft}
+                sendMessage={sendMessage}
+                connected={connected}
+                scrollRef={chatScrollRef}
+                currentUser={userName || userId}
+              />
+            )}
+            {tab === 'replays' && (
+              <ReplaysPanel
+                replays={replays}
+                onClear={() => {
+                  replays.forEach((r) => URL.revokeObjectURL(r.url));
+                  setReplays([]);
+                }}
+              />
+            )}
+          </div>
+        </section>
 
-      <section className="flex-1 overflow-y-auto">
-        {tab === 'people' && (
-          <PeoplePanel
-            participants={participants}
-            onVolumeChange={setParticipantVolume}
-            onToggleMute={toggleMute}
-          />
-        )}
-        {tab === 'chat' && (
-          <ChatPanel
-            messages={messages}
-            draft={draft}
-            setDraft={setDraft}
-            sendMessage={sendMessage}
-            connected={connected}
-            scrollRef={chatScrollRef}
-            currentUser={userName || userId}
-          />
-        )}
-        {tab === 'replays' && (
-          <ReplaysPanel
-            replays={replays}
-            onClear={() => {
-              replays.forEach((r) => URL.revokeObjectURL(r.url));
-              setReplays([]);
-            }}
-          />
-        )}
-      </section>
+        <footer className="glass-panel absolute bottom-0 left-0 right-0 z-40 flex h-40 items-center justify-center rounded-t-[2.5rem] border-t border-zinc-800 px-6 pb-8 pt-2">
+          <div className="relative flex w-full max-w-sm items-center justify-between">
+            <button
+              onClick={() => selectTab('chat')}
+              className="group relative flex aspect-square w-14 flex-col items-center justify-center gap-1 rounded-2xl bg-zinc-900 text-zinc-500 transition active:scale-95 shadow-tactile-up"
+            >
+              {unreadChat > 0 && (
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-emerald-500" />
+              )}
+              <ChatIcon className="h-5 w-5 text-zinc-400 group-hover:text-white" />
+              <span className="text-[9px] font-bold uppercase">Chat</span>
+            </button>
 
-      <footer className="border-t border-neutral-800 px-6 py-4 flex flex-col items-center gap-2 bg-neutral-950">
-        <p className="text-[11px] text-neutral-500">
-          Hold to talk (or press Space)
-        </p>
-        <button
-          disabled={!connected}
-          onMouseDown={startTalking}
-          onMouseUp={stopTalking}
-          onMouseLeave={stopTalking}
-          onTouchStart={(e) => {
-            e.preventDefault();
-            startTalking();
-          }}
-          onTouchEnd={(e) => {
-            e.preventDefault();
-            stopTalking();
-          }}
-          className={`select-none w-32 h-32 rounded-full font-bold text-lg transition shadow-2xl ${
-            transmitting
-              ? 'bg-red-500 scale-95 shadow-red-500/50'
-              : connected
-                ? 'bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600'
-                : 'bg-neutral-700 opacity-50 cursor-not-allowed'
-          } text-neutral-950`}
-        >
-          {transmitting ? 'ON AIR' : connected ? 'TALK' : '…'}
-        </button>
-      </footer>
+            <div
+              className={`ptt-halo relative -translate-y-6 flex h-28 w-28 items-center justify-center ${
+                transmitting ? 'ptt-halo-active' : ''
+              }`}
+            >
+              <div className="absolute inset-0 rounded-full border-4 border-zinc-950 bg-zinc-900 shadow-[inset_0_4px_10px_rgba(0,0,0,0.8),_0_2px_0_rgba(255,255,255,0.05)]" />
+              <button
+                disabled={!connected}
+                onMouseDown={startTalking}
+                onMouseUp={stopTalking}
+                onMouseLeave={stopTalking}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  startTalking();
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  stopTalking();
+                }}
+                className={`absolute z-10 flex h-24 w-24 select-none flex-col items-center justify-center gap-1 rounded-full border transition-all duration-150 focus:outline-none ${
+                  transmitting
+                    ? 'translate-y-1 border-emerald-500 bg-gradient-to-b from-zinc-800 to-zinc-950 shadow-ptt-active'
+                    : connected
+                      ? 'border-zinc-600 bg-gradient-to-b from-zinc-700 to-zinc-900 shadow-ptt-idle'
+                      : 'border-zinc-700 bg-zinc-800 opacity-60'
+                }`}
+              >
+                <span
+                  className={`mb-1 h-2 w-2 rounded-full ${
+                    transmitting
+                      ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,1)]'
+                      : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]'
+                  }`}
+                />
+                <MicIcon className="h-6 w-6 text-zinc-200" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+                  {transmitting ? 'On Air' : connected ? 'Push' : 'Wait'}
+                </span>
+              </button>
+            </div>
+
+            <button
+              onClick={() => selectTab('replays')}
+              className="group flex aspect-square w-14 flex-col items-center justify-center gap-1 rounded-2xl bg-zinc-900 text-zinc-500 transition active:scale-95 shadow-tactile-up"
+            >
+              <ReplayIcon className="h-5 w-5 text-zinc-400 group-hover:text-white" />
+              <span className="text-[9px] font-bold uppercase">Replay</span>
+            </button>
+          </div>
+          <div className="absolute bottom-2 left-1/2 h-1 w-1/3 -translate-x-1/2 rounded-full bg-zinc-600 opacity-30" />
+        </footer>
+      </div>
     </main>
   );
 }
@@ -776,6 +862,146 @@ function participantDisplayName(participant: {
   return participant.name?.trim() || participant.identity;
 }
 
+function LockIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M8 11V8a4 4 0 1 1 8 0v3" />
+    </svg>
+  );
+}
+
+function HashIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M4 9h16" />
+      <path d="M4 15h16" />
+      <path d="M10 3 8 21" />
+      <path d="m16 3-2 18" />
+    </svg>
+  );
+}
+
+function SettingsIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1A2 2 0 1 1 4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1A2 2 0 1 1 7.1 4.2l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6h.1a1.7 1.7 0 0 0 1.9-.3l.1-.1A2 2 0 1 1 20 7.1l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.6 1h.1a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.8.8Z" />
+    </svg>
+  );
+}
+
+function LeaveIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <path d="m16 17 5-5-5-5" />
+      <path d="M21 12H9" />
+    </svg>
+  );
+}
+
+function ChatIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z" />
+      <path d="M8 9h8" />
+      <path d="M8 13h5" />
+    </svg>
+  );
+}
+
+function MicIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M12 14a4 4 0 0 0 4-4V6a4 4 0 0 0-8 0v4a4 4 0 0 0 4 4Z" />
+      <path d="M19 10a7 7 0 0 1-14 0" />
+      <path d="M12 17v4" />
+      <path d="M8 21h8" />
+    </svg>
+  );
+}
+
+function ReplayIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M3 12a9 9 0 1 0 3-6.7" />
+      <path d="M3 3v6h6" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  );
+}
+
 function StatusDot({ state }: { state: ConnectionState }) {
   const map: Record<ConnectionState, { color: string; label: string }> = {
     [ConnectionState.Disconnected]: {
@@ -795,7 +1021,7 @@ function StatusDot({ state }: { state: ConnectionState }) {
   };
   const v = map[state] ?? map[ConnectionState.Disconnected];
   return (
-    <div className="flex items-center gap-2 text-xs text-neutral-400">
+    <div className="flex items-center gap-2 rounded-full bg-zinc-900 px-3 py-2 font-mono text-[10px] uppercase text-zinc-400 inset-border">
       <span className={`w-2 h-2 rounded-full ${v.color}`} />
       {v.label}
     </div>
@@ -814,10 +1040,10 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`flex-1 py-3 text-xs font-medium border-b-2 transition ${
+      className={`rounded-xl py-3 text-xs font-bold transition ${
         active
-          ? 'border-emerald-500 text-emerald-300'
-          : 'border-transparent text-neutral-400 hover:text-neutral-100'
+          ? 'bg-emerald-500 text-black'
+          : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
       }`}
     >
       <span className="inline-flex items-center justify-center gap-1">
@@ -829,7 +1055,15 @@ function TabButton({
 
 function Count({ value }: { value: number }) {
   return (
-    <span className="ml-1 text-[10px] text-neutral-500">({value})</span>
+    <span className="ml-1 text-[10px] opacity-70">({value})</span>
+  );
+}
+
+function Badge({ value }: { value: number }) {
+  return (
+    <span className="ml-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-black/20 px-1 text-[10px] font-black">
+      {value}
+    </span>
   );
 }
 
@@ -843,39 +1077,50 @@ function PeoplePanel({
   onToggleMute: (id: string) => void;
 }) {
   return (
-    <ul className="p-3 space-y-2">
+    <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {participants.map((p) => (
         <li
           key={p.identity}
-          className={`rounded-xl border px-3 py-2 ${
+          className={`relative overflow-hidden rounded-2xl border p-3 inset-border ${
             p.isSpeaking
-              ? 'bg-emerald-950/40 border-emerald-700'
-              : 'bg-neutral-900 border-neutral-800'
+              ? 'border-emerald-500/30 bg-zinc-900/80 shadow-[0_0_15px_-5px_rgba(16,185,129,0.25)]'
+              : 'border-transparent bg-zinc-900/55'
           }`}
         >
           <div className="flex items-center gap-3">
             <span
-              className={`inline-block w-2.5 h-2.5 rounded-full ${
+              className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-black uppercase ${
                 p.isSpeaking
-                  ? 'bg-emerald-400 animate-pulse'
-                  : 'bg-neutral-600'
+                  ? 'bg-emerald-500 text-black'
+                  : 'bg-zinc-800 text-zinc-500'
               }`}
-            />
-            <span className="font-medium text-sm flex-1 truncate">
-              {p.displayName}
-              {p.isLocal && (
-                <span className="ml-2 text-[10px] text-neutral-500">
-                  (you)
+            >
+              {p.displayName.slice(0, 1)}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-bold text-zinc-100">
+                {p.displayName}
+              </span>
+              {p.isSpeaking ? (
+                <span className="mt-1 flex h-3 items-end gap-[2px]">
+                  <span className="vu-bar" />
+                  <span className="vu-bar" />
+                  <span className="vu-bar" />
+                  <span className="vu-bar" />
+                </span>
+              ) : (
+                <span className="block font-mono text-[10px] text-zinc-500">
+                  {p.isLocal ? 'YOU' : 'STANDBY'}
                 </span>
               )}
             </span>
             {!p.isLocal && (
               <button
                 onClick={() => onToggleMute(p.identity)}
-                className={`text-[11px] px-2 py-1 rounded ${
+                className={`rounded-lg px-2 py-1 text-[10px] font-bold uppercase ${
                   p.muted
-                    ? 'bg-red-500/20 text-red-300 border border-red-700'
-                    : 'bg-neutral-800 text-neutral-300 border border-neutral-700 hover:bg-neutral-700'
+                    ? 'border border-red-700 bg-red-500/20 text-red-300'
+                    : 'border border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
                 }`}
               >
                 {p.muted ? 'Muted' : 'Mute'}
@@ -884,7 +1129,7 @@ function PeoplePanel({
           </div>
           {!p.isLocal && (
             <div className="mt-2 flex items-center gap-2">
-              <span className="text-[10px] text-neutral-500 w-10">Vol</span>
+              <span className="w-10 text-[10px] uppercase text-zinc-500">Vol</span>
               <input
                 type="range"
                 min={0}
@@ -897,10 +1142,13 @@ function PeoplePanel({
                 disabled={p.muted}
                 className="flex-1 accent-emerald-500"
               />
-              <span className="text-[10px] text-neutral-500 w-9 text-right tabular-nums">
+              <span className="w-9 text-right font-mono text-[10px] tabular-nums text-zinc-500">
                 {Math.round(p.volume * 100)}%
               </span>
             </div>
+          )}
+          {p.isSpeaking && (
+            <div className="pointer-events-none absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-emerald-500/10 to-transparent" />
           )}
         </li>
       ))}
@@ -926,10 +1174,10 @@ function ChatPanel({
   currentUser: string;
 }) {
   return (
-    <div className="h-full flex flex-col">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
+    <div className="flex min-h-[360px] flex-col overflow-hidden rounded-3xl bg-zinc-900/55 inset-border">
+      <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto px-3 py-3">
         {messages.length === 0 && (
-          <div className="text-xs text-neutral-500 text-center pt-8">
+          <div className="pt-8 text-center text-xs text-zinc-500">
             No messages yet. Say hi.
           </div>
         )}
@@ -943,12 +1191,12 @@ function ChatPanel({
               <div
                 className={`max-w-[80%] rounded-2xl px-3 py-2 ${
                   isMine
-                    ? 'bg-emerald-500/90 text-neutral-950'
-                    : 'bg-neutral-800 text-neutral-100'
+                    ? 'bg-emerald-500 text-black'
+                    : 'bg-zinc-800 text-zinc-100'
                 }`}
               >
                 {!isMine && (
-                  <div className="text-[10px] font-semibold text-neutral-400 mb-0.5">
+                  <div className="mb-0.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                     {m.from}
                   </div>
                 )}
@@ -957,7 +1205,7 @@ function ChatPanel({
                 </div>
                 <div
                   className={`text-[10px] mt-1 ${
-                    isMine ? 'text-emerald-950/70' : 'text-neutral-500'
+                    isMine ? 'text-emerald-950/70' : 'text-zinc-500'
                   }`}
                 >
                   {timeStr(m.ts)}
@@ -972,7 +1220,7 @@ function ChatPanel({
           e.preventDefault();
           sendMessage();
         }}
-        className="border-t border-neutral-800 p-2 flex gap-2"
+        className="flex gap-2 border-t border-zinc-800 p-2"
       >
         <input
           type="text"
@@ -980,12 +1228,12 @@ function ChatPanel({
           onChange={(e) => setDraft(e.target.value)}
           placeholder={connected ? 'Type a message…' : 'Not connected'}
           disabled={!connected}
-          className="flex-1 rounded-lg bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm outline-none focus:border-neutral-600 disabled:opacity-50"
+          className="flex-1 rounded-2xl border border-zinc-800 bg-zinc-950 px-3 py-3 text-sm outline-none focus:border-emerald-500/50 disabled:opacity-50"
         />
         <button
           type="submit"
           disabled={!connected || !draft.trim()}
-          className="rounded-lg bg-emerald-500 text-neutral-950 px-4 text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+          className="rounded-2xl bg-emerald-500 px-4 text-sm font-black text-black disabled:cursor-not-allowed disabled:opacity-40"
         >
           Send
         </button>
@@ -1003,21 +1251,21 @@ function ReplaysPanel({
 }) {
   if (replays.length === 0) {
     return (
-      <div className="p-6 text-xs text-neutral-500 text-center">
+      <div className="rounded-3xl bg-zinc-900/55 p-6 text-center text-xs text-zinc-500 inset-border">
         No voice clips yet. Anything you receive while on this page is recorded
         here so you can replay it. Clips disappear when you leave the channel.
       </div>
     );
   }
   return (
-    <div className="p-3 space-y-2">
+    <div className="space-y-2">
       <div className="flex justify-between items-center">
-        <span className="text-[10px] uppercase tracking-wider text-neutral-500">
+        <span className="text-[10px] uppercase tracking-wider text-zinc-500">
           {replays.length} clip{replays.length === 1 ? '' : 's'}
         </span>
         <button
           onClick={onClear}
-          className="text-[11px] text-neutral-500 hover:text-neutral-200"
+          className="text-[11px] text-zinc-500 hover:text-zinc-200"
         >
           Clear all
         </button>
@@ -1026,11 +1274,11 @@ function ReplaysPanel({
         {replays.map((r) => (
           <li
             key={r.id}
-            className="bg-neutral-900 border border-neutral-800 rounded-xl p-3"
+            className="rounded-2xl border border-zinc-800 bg-zinc-900/55 p-3 inset-border"
           >
             <div className="flex justify-between items-baseline mb-1">
               <span className="text-sm font-medium">{r.from}</span>
-              <span className="text-[10px] text-neutral-500">
+              <span className="text-[10px] text-zinc-500">
                 {timeStr(r.ts)} · {(r.durationMs / 1000).toFixed(1)}s
               </span>
             </div>
