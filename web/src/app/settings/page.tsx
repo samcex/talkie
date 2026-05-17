@@ -37,26 +37,36 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="min-h-dvh bg-neutral-950 text-neutral-100 px-6 py-10">
-      <div className="w-full max-w-sm mx-auto space-y-6">
-        <header className="flex items-center gap-3">
-          <Logo size={36} />
-          <h1 className="text-xl font-semibold flex-1">Settings</h1>
+    <main className="min-h-dvh talkie-shell flex justify-center text-zinc-950">
+      <div className="talkie-phone relative min-h-dvh w-full max-w-[430px] overflow-hidden bg-white px-4 py-10">
+        <div className="talkie-noise" />
+        <header className="relative z-10 flex items-center gap-3 rounded-[2rem] bg-white/95 p-4 inset-border">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 inset-border">
+            <Logo size={34} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-red-500">
+              Talkie
+            </div>
+            <h1 className="text-xl font-black tracking-tight text-zinc-950">
+              Settings
+            </h1>
+          </div>
           <Link
             href="/"
-            className="text-xs text-neutral-400 hover:text-neutral-100"
+            className="rounded-full bg-zinc-100 px-4 py-2 text-xs font-bold uppercase tracking-wider text-zinc-700 inset-border hover:text-zinc-950"
           >
             Back
           </Link>
         </header>
 
-        <section className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 space-y-5">
+        <section className="machined-panel relative z-10 mt-5 rounded-[2rem] p-5">
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label htmlFor="vol" className="text-sm">
+              <label htmlFor="vol" className="text-sm font-bold text-zinc-950">
                 Output volume
               </label>
-              <span className="text-xs text-neutral-400 tabular-nums">
+              <span className="font-mono text-xs text-zinc-500 tabular-nums">
                 {Math.round(s.outputVolume * 100)}%
               </span>
             </div>
@@ -109,8 +119,10 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 space-y-3 text-xs text-neutral-400">
-          <div className="font-semibold text-neutral-300">About</div>
+        <section className="relative z-10 mt-5 rounded-[2rem] bg-white/90 p-5 text-xs leading-relaxed text-zinc-500 inset-border">
+          <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-red-500">
+            About
+          </div>
           <div>
             Talkie is a push-to-talk app. Audio is routed through LiveKit; nothing
             is recorded server-side. Voice message replays are stored only in your
@@ -137,7 +149,7 @@ function Toggle({
 }) {
   return (
     <label
-      className={`flex items-start gap-3 ${disabled ? 'opacity-50' : 'cursor-pointer'}`}
+      className={`flex items-start gap-3 rounded-2xl bg-white/85 p-3 inset-border ${disabled ? 'opacity-50' : 'cursor-pointer'}`}
     >
       <input
         type="checkbox"
@@ -147,9 +159,9 @@ function Toggle({
         className="mt-1 h-4 w-4 accent-red-600"
       />
       <div className="flex-1">
-        <div className="text-sm">{label}</div>
+        <div className="text-sm font-bold text-zinc-950">{label}</div>
         {description && (
-          <div className="text-xs text-neutral-500">{description}</div>
+          <div className="text-xs text-zinc-500">{description}</div>
         )}
       </div>
     </label>
