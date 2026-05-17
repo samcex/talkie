@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
         name,
         email,
         initials: initialsFor(name),
+        lastActiveAt: u.lastSignInAt ?? u.updatedAt ?? null,
       };
     });
 

@@ -60,6 +60,7 @@ export default function ChannelPage() {
   const channelName = params?.name ?? 'general';
   const directUserId = search.get('peer')?.trim() || undefined;
   const directTitle = search.get('title')?.trim() || 'Direct Call';
+  const wantsRing = search.get('ring') === '1';
   const isDirect = channelName === 'direct' && Boolean(directUserId);
   const displayChannelName = isDirect ? directTitle : channelName;
   const userName =
@@ -622,6 +623,16 @@ export default function ChannelPage() {
   }
 
   const connected = state === ConnectionState.Connected;
+  const remoteParticipantCount = participants.filter((p) => !p.isLocal).length;
+  const waitingForPeer =
+    wantsRing && isDirect && connected && remoteParticipantCount === 0;
+
+  useEffect(() => {
+    if (!waitingForPeer) return;
+    beep();
+    const timer = window.setInterval(beep, 3500);
+    return () => window.clearInterval(timer);
+  }, [beep, waitingForPeer]);
 
   return (
     <main className="min-h-dvh talkie-shell flex justify-center text-zinc-950">
@@ -669,6 +680,13 @@ export default function ChannelPage() {
           </div>
         )}
 
+        {waitingForPeer && (
+          <div className="relative z-20 border-b border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            Calling {displayChannelName}. This line is open and will connect as
+            soon as they join.
+          </div>
+        )}
+
         <section className="relative z-10 flex-1 overflow-y-auto no-scrollbar px-4 pb-44 pt-5">
           <div className="machined-panel relative overflow-hidden rounded-[2rem] p-5">
             <svg
@@ -701,7 +719,9 @@ export default function ChannelPage() {
                   />
                   <span className="text-xs font-bold uppercase tracking-[0.2em] text-red-500">
                   {isDirect
-                    ? connected
+                    ? waitingForPeer
+                      ? 'Direct Ringing'
+                      : connected
                       ? 'Direct Link'
                       : 'Direct Pending'
                     : connected
@@ -735,7 +755,7 @@ export default function ChannelPage() {
                   Mode
                 </div>
                 <div className="font-mono text-lg text-zinc-800">
-                  {isDirect ? '1:1' : isPrivate ? 'PIN' : 'OPEN'}
+                  {waitingForPeer ? 'RING' : isDirect ? '1:1' : isPrivate ? 'PIN' : 'OPEN'}
                 </div>
               </div>
             </div>

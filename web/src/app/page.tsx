@@ -12,12 +12,19 @@ import {
   type RecentChannel,
 } from '@/lib/recent-channels';
 import { setChannelPin } from '@/lib/channel-pin';
+import {
+  forgetContact,
+  getContacts,
+  saveContact,
+  type Contact,
+} from '@/lib/contacts';
 
 type DirectUser = {
   id: string;
   name: string;
   email: string;
   initials: string;
+  lastActiveAt: number | null;
 };
 
 export default function HomePage() {
@@ -26,6 +33,7 @@ export default function HomePage() {
   const [channel, setChannel] = useState('general');
   const [pin, setPin] = useState('');
   const [recent, setRecent] = useState<RecentChannel[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [pinPrompt, setPinPrompt] = useState<{
     channel: string;
     value: string;
@@ -38,6 +46,7 @@ export default function HomePage() {
 
   useEffect(() => {
     setRecent(getRecentChannels());
+    setContacts(getContacts());
   }, []);
 
   useEffect(() => {
@@ -125,12 +134,29 @@ export default function HomePage() {
     setRecent(getRecentChannels());
   }
 
-  function startDirectCall(target: DirectUser) {
+  function startDirectCall(target: DirectUser | Contact) {
+    setContacts(
+      saveContact({
+        id: target.id,
+        name: target.name,
+        email: target.email,
+        initials: target.initials,
+        lastActiveAt: target.lastActiveAt,
+      }),
+    );
     router.push(
-      `/channel/direct?peer=${encodeURIComponent(target.id)}&title=${encodeURIComponent(
+      `/channel/direct?peer=${encodeURIComponent(target.id)}&ring=1&title=${encodeURIComponent(
         target.name,
       )}`,
     );
+  }
+
+  function addContact(target: DirectUser) {
+    setContacts(saveContact(target));
+  }
+
+  function removeContact(id: string) {
+    setContacts(forgetContact(id));
   }
 
   const greetingName =
@@ -263,23 +289,65 @@ export default function HomePage() {
             <div className="mb-3 flex items-end justify-between gap-3">
               <div>
                 <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">
-                  Direct Call
+                  Contacts
                 </h2>
                 <p className="mt-1 text-xs text-zinc-500">
-                  Search a teammate and open a private one-to-one channel.
+                  Save teammates for fast one-to-one calls.
                 </p>
               </div>
               <span className="rounded-full bg-red-600/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-red-700">
                 1:1
               </span>
             </div>
+            {contacts.length > 0 && (
+              <ul className="mb-4 space-y-2">
+                {contacts.map((c) => (
+                  <li
+                    key={c.id}
+                    className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3 inset-border"
+                  >
+                    <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-red-600 text-sm font-black text-white">
+                      {c.initials}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-bold text-zinc-950">
+                        {c.name}
+                      </span>
+                      <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase text-zinc-500">
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${activityClass(
+                            c.lastActiveAt,
+                          )}`}
+                        />
+                        {activityLabel(c.lastActiveAt)}
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => startDirectCall(c)}
+                      className="rounded-full bg-red-600 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white"
+                    >
+                      Call
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeContact(c.id)}
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100 text-xs text-zinc-500 transition hover:text-zinc-950"
+                      aria-label={`Remove ${c.name}`}
+                    >
+                      x
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
             <div className="relative">
               <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
               <input
                 type="search"
                 value={directQuery}
                 onChange={(e) => setDirectQuery(e.target.value)}
-                placeholder="Search by name or email"
+                placeholder="Search users to call or save"
                 className="w-full rounded-2xl border border-zinc-200 bg-white py-4 pl-11 pr-4 text-sm text-zinc-950 outline-none transition focus:border-red-600/60"
               />
             </div>
@@ -301,11 +369,9 @@ export default function HomePage() {
                   </div>
                 )}
               {directUsers.map((u) => (
-                <button
+                <div
                   key={u.id}
-                  type="button"
-                  onClick={() => startDirectCall(u)}
-                  className="flex w-full items-center gap-3 rounded-2xl bg-white px-3 py-3 text-left transition active:scale-[0.99] inset-border hover:bg-zinc-100"
+                  className="flex w-full items-center gap-3 rounded-2xl bg-white px-3 py-3 text-left inset-border"
                 >
                   <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-red-600 text-sm font-black text-white">
                     {u.initials}
@@ -319,11 +385,30 @@ export default function HomePage() {
                         {u.email}
                       </span>
                     )}
+                    <span className="mt-0.5 flex items-center gap-1.5 font-mono text-[10px] uppercase text-zinc-500">
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${activityClass(
+                          u.lastActiveAt,
+                        )}`}
+                      />
+                      {activityLabel(u.lastActiveAt)}
+                    </span>
                   </span>
-                  <span className="rounded-full bg-red-600 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white">
+                  <button
+                    type="button"
+                    onClick={() => addContact(u)}
+                    className="rounded-full bg-zinc-100 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-zinc-700"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => startDirectCall(u)}
+                    className="rounded-full bg-red-600 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-white"
+                  >
                     Call
-                  </span>
-                </button>
+                  </button>
+                </div>
               ))}
             </div>
           </section>
@@ -458,6 +543,19 @@ function relativeTime(ts: number) {
   if (h < 24) return `${h}h ago`;
   const d = Math.round(h / 24);
   return `${d}d ago`;
+}
+
+function activityLabel(ts: number | null) {
+  if (!ts) return 'no activity';
+  return relativeTime(ts);
+}
+
+function activityClass(ts: number | null) {
+  if (!ts) return 'bg-zinc-300';
+  const diff = Date.now() - ts;
+  if (diff < 15 * 60_000) return 'bg-red-600';
+  if (diff < 24 * 60 * 60_000) return 'bg-amber-400';
+  return 'bg-zinc-300';
 }
 
 function LockIcon({ className }: { className?: string }) {
