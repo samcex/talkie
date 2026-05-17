@@ -627,10 +627,10 @@ export default function ChannelPage() {
     <main className="min-h-dvh talkie-shell flex justify-center text-zinc-100">
       <div className="talkie-phone relative flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-zinc-950">
         <div className="talkie-noise" />
-        <header className="glass-panel relative z-20 flex shrink-0 items-center justify-between rounded-b-[2rem] px-5 pb-4 pt-10">
+        <header className="relative z-20 flex shrink-0 items-center justify-between border-b border-zinc-900 bg-zinc-950/95 px-4 pb-3 pt-10">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-zinc-900 inset-border">
-              <Logo size={30} />
+            <div className="flex h-9 w-9 items-center justify-center">
+              <Logo size={28} />
             </div>
             <div className="min-w-0">
               <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-500">
@@ -649,13 +649,13 @@ export default function ChannelPage() {
             <Link
               href="/settings"
               aria-label="Settings"
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-zinc-400 transition active:scale-95 inset-border hover:text-white"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-400 transition active:scale-95 hover:bg-zinc-900 hover:text-white"
             >
               <SettingsIcon className="h-4 w-4" />
             </Link>
             <button
               onClick={() => router.push('/')}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-zinc-400 transition active:scale-95 inset-border hover:text-white"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-400 transition active:scale-95 hover:bg-zinc-900 hover:text-white"
               aria-label="Leave channel"
             >
               <LeaveIcon className="h-4 w-4" />
