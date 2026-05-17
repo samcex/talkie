@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Talkie Feature Overview</title>
+    <style>
+      @page {
+        size: 16in 9in;
+        margin: 0;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #f4f4f5;
+        color: #18181b;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+
+      .slide {
+        position: relative;
+        display: flex;
+        min-height: 9in;
+        width: 16in;
+        page-break-after: always;
+        overflow: hidden;
+        background: #ffffff;
+      }
+
+      .slide::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(220, 38, 38, 0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(220, 38, 38, 0.05) 1px, transparent 1px);
+        background-size: 34px 34px;
+        opacity: 0.8;
+      }
+
+      .content {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        padding: 0.72in 0.86in;
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: 1fr 0.86fr;
+        gap: 0.55in;
+        align-items: center;
+        height: 100%;
+      }
+
+      .eyebrow {
+        color: #dc2626;
+        font-size: 0.18in;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        max-width: 7.7in;
+        font-size: 0.78in;
+        line-height: 0.92;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      h2 {
+        max-width: 8.5in;
+        font-size: 0.48in;
+        line-height: 1.02;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      h3 {
+        font-size: 0.24in;
+        line-height: 1.08;
+      }
+
+      .lead {
+        max-width: 7.4in;
+        margin-top: 0.26in;
+        color: #52525b;
+        font-size: 0.24in;
+        line-height: 1.36;
+      }
+
+      .meta {
+        margin-top: auto;
+        color: #71717a;
+        font-size: 0.16in;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .logo {
+        display: inline-flex;
+        height: 1.05in;
+        width: 1.05in;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.28in;
+        background: #dc2626;
+        box-shadow: 0 0.24in 0.55in rgba(220, 38, 38, 0.22);
+      }
+
+      .logo svg {
+        height: 0.86in;
+        width: 0.86in;
+      }
+
+      .phone {
+        width: 4.1in;
+        min-height: 7.15in;
+        justify-self: center;
+        border: 1px solid #e4e4e7;
+        border-radius: 0.5in;
+        background: #fff;
+        box-shadow: 0 0.34in 0.85in rgba(24, 24, 27, 0.18);
+        overflow: hidden;
+      }
+
+      .phone-top {
+        display: grid;
+        grid-template-columns: 0.75in 1fr 0.75in;
+        gap: 0.08in;
+        align-items: center;
+        padding: 0.42in 0.22in 0.2in;
+        border-bottom: 1px solid #e4e4e7;
+        background: #fafafa;
+      }
+
+      .mini-logo {
+        display: flex;
+        height: 0.48in;
+        width: 0.48in;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.16in;
+        background: #dc2626;
+        color: #fff;
+        font-weight: 900;
+      }
+
+      .phone-title {
+        text-align: center;
+      }
+
+      .phone-title small {
+        display: block;
+        color: #71717a;
+        font-size: 0.11in;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .phone-title strong {
+        display: block;
+        margin-top: 0.02in;
+        font-size: 0.2in;
+      }
+
+      .circle-btn {
+        height: 0.38in;
+        width: 0.38in;
+        justify-self: end;
+        border-radius: 999px;
+        background: #f4f4f5;
+      }
+
+      .screen-body {
+        padding: 0.22in;
+      }
+
+      .panel {
+        border: 1px solid #e4e4e7;
+        border-radius: 0.28in;
+        background: #fff;
+        padding: 0.22in;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      }
+
+      .panel + .panel {
+        margin-top: 0.18in;
+      }
+
+      .panel-label {
+        display: flex;
+        align-items: center;
+        gap: 0.07in;
+        color: #dc2626;
+        font-size: 0.12in;
+        font-weight: 900;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+      }
+
+      .dot {
+        height: 0.08in;
+        width: 0.08in;
+        border-radius: 999px;
+        background: #dc2626;
+      }
+
+      .panel-title {
+        margin-top: 0.08in;
+        font-size: 0.32in;
+        font-weight: 950;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+
+      .fake-input {
+        margin-top: 0.18in;
+        border: 1px solid #e4e4e7;
+        border-radius: 0.18in;
+        padding: 0.15in;
+        color: #18181b;
+        font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+        font-size: 0.16in;
+      }
+
+      .red-button {
+        margin-top: 0.16in;
+        border-radius: 0.18in;
+        background: #dc2626;
+        color: #fff;
+        padding: 0.16in;
+        text-align: center;
+        font-size: 0.14in;
+        font-weight: 950;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.22in;
+        margin-top: 0.5in;
+      }
+
+      .card {
+        min-height: 1.55in;
+        border: 1px solid #e4e4e7;
+        border-radius: 0.22in;
+        background: rgba(255, 255, 255, 0.92);
+        padding: 0.24in;
+      }
+
+      .card strong {
+        display: block;
+        color: #18181b;
+        font-size: 0.2in;
+        line-height: 1.1;
+      }
+
+      .card span {
+        display: block;
+        margin-top: 0.1in;
+        color: #52525b;
+        font-size: 0.15in;
+        line-height: 1.35;
+      }
+
+      .feature-list {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.18in;
+        margin-top: 0.45in;
+      }
+
+      .feature {
+        display: grid;
+        grid-template-columns: 0.18in 1fr;
+        gap: 0.13in;
+        align-items: start;
+        border: 1px solid #e4e4e7;
+        border-radius: 0.18in;
+        background: #fff;
+        padding: 0.18in;
+      }
+
+      .feature p {
+        color: #52525b;
+        font-size: 0.16in;
+        line-height: 1.34;
+      }
+
+      .feature b {
+        display: block;
+        color: #18181b;
+        font-size: 0.18in;
+        line-height: 1.1;
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.11in;
+        margin-top: 0.38in;
+      }
+
+      .pill {
+        border: 1px solid #fecaca;
+        border-radius: 999px;
+        background: #fef2f2;
+        color: #991b1b;
+        padding: 0.1in 0.16in;
+        font-size: 0.14in;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0.14in;
+        margin-top: 0.48in;
+      }
+
+      .step {
+        position: relative;
+        min-height: 1.75in;
+        border: 1px solid #e4e4e7;
+        border-radius: 0.22in;
+        background: #fff;
+        padding: 0.2in;
+      }
+
+      .step-num {
+        display: flex;
+        height: 0.34in;
+        width: 0.34in;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        background: #dc2626;
+        color: #fff;
+        font-size: 0.15in;
+        font-weight: 950;
+      }
+
+      .step b {
+        display: block;
+        margin-top: 0.16in;
+        font-size: 0.17in;
+      }
+
+      .step p {
+        margin-top: 0.08in;
+        color: #52525b;
+        font-size: 0.14in;
+        line-height: 1.32;
+      }
+
+      .footer {
+        position: absolute;
+        right: 0.86in;
+        bottom: 0.38in;
+        left: 0.86in;
+        display: flex;
+        justify-content: space-between;
+        color: #a1a1aa;
+        font-size: 0.12in;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="slide">
+      <div class="content split">
+        <div>
+          <div class="logo" aria-hidden="true">
+            <svg viewBox="0 0 64 64" fill="none">
+              <path d="M21 18c0-2.8 2.2-5 5-5h12c2.8 0 5 2.2 5 5v28c0 2.8-2.2 5-5 5H26c-2.8 0-5-2.2-5-5V18Z" fill="#fff"/>
+              <path d="M27 12V7m10 5V7" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+              <rect x="26" y="20" width="12" height="11" rx="2" fill="#dc2626" opacity=".14"/>
+              <circle cx="32" cy="39" r="6" fill="#dc2626"/>
+              <path d="M14 25a14 14 0 0 1 0 14M50 25a14 14 0 0 0 0 14" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".82"/>
+            </svg>
+          </div>
+          <p class="eyebrow" style="margin-top: .35in">Feature overview</p>
+          <h1>Talkie Push-to-Talk App</h1>
+          <p class="lead">
+            A mobile-first web/PWA walkie-talkie experience with secure sign-in,
+            live channels, direct calls, contacts, chat, and browser-local voice
+            replay.
+          </p>
+          <p class="meta">Current production feature set</p>
+        </div>
+        <div class="phone">
+          <div class="phone-top">
+            <div class="mini-logo">T</div>
+            <div class="phone-title"><small>Callsign</small><strong>Talkie User</strong></div>
+            <div class="circle-btn"></div>
+          </div>
+          <div class="screen-body">
+            <div class="panel">
+              <div class="panel-label"><span class="dot"></span>Secure Channel</div>
+              <div class="panel-title">Join Comms</div>
+              <div class="fake-input">general</div>
+              <div class="red-button">Connect</div>
+            </div>
+            <div class="panel">
+              <div class="panel-label"><span class="dot"></span>Contacts</div>
+              <div class="fake-input">Search users to call or save</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer"><span>Talkie</span><span>01</span></div>
+    </section>
+
+    <section class="slide">
+      <div class="content">
+        <p class="eyebrow">Identity and access</p>
+        <h2>Secure accounts and controlled access</h2>
+        <div class="grid">
+          <div class="card"><strong>Clerk authentication</strong><span>Users sign in and register through Clerk-backed auth screens.</span></div>
+          <div class="card"><strong>Display names</strong><span>The app shows first name, username, full name, or email instead of raw user IDs.</span></div>
+          <div class="card"><strong>Admin controls</strong><span>Admin-only route support exists for managing users and disabled accounts.</span></div>
+          <div class="card"><strong>Disabled-user blocking</strong><span>Token and user search APIs reject disabled accounts before they can join or be called.</span></div>
+          <div class="card"><strong>Private identities</strong><span>Direct calls use Clerk user IDs internally while showing readable names in the UI.</span></div>
+          <div class="card"><strong>Vercel-ready config</strong><span>The app builds from the web project root and deploys from GitHub main.</span></div>
+        </div>
+      </div>
+      <div class="footer"><span>Security</span><span>02</span></div>
+    </section>
+
+    <section class="slide">
+      <div class="content">
+        <p class="eyebrow">Push-to-talk core</p>
+        <h2>Live audio channels powered by LiveKit</h2>
+        <div class="feature-list">
+          <div class="feature"><span class="dot"></span><p><b>Public channels</b>Users can join named live rooms such as general.</p></div>
+          <div class="feature"><span class="dot"></span><p><b>PIN-protected channels</b>Private rooms are derived from channel name plus PIN.</p></div>
+          <div class="feature"><span class="dot"></span><p><b>Push-to-talk mic</b>Microphone access is requested lazily when the user presses the talk button.</p></div>
+          <div class="feature"><span class="dot"></span><p><b>Spacebar support</b>Desktop users can hold Space to transmit.</p></div>
+          <div class="feature"><span class="dot"></span><p><b>Connection status</b>The channel header shows live, connecting, reconnecting, and offline states.</p></div>
+          <div class="feature"><span class="dot"></span><p><b>Recent channels</b>Previously joined channels are remembered locally for quick re-entry.</p></div>
+        </div>
+      </div>
+      <div class="footer"><span>Live comms</span><span>03</span></div>
+    </section>
+
+    <section class="slide">
+      <div class="content">
+        <p class="eyebrow">Direct calls</p>
+        <h2>One-to-one calls, contacts, and incoming alerts</h2>
+        <div class="flow">
+          <div class="step"><div class="step-num">1</div><b>Search</b><p>Find users by name or email through Clerk-backed search.</p></div>
+          <div class="step"><div class="step-num">2</div><b>Save</b><p>Add users to local contacts for one-tap calling later.</p></div>
+          <div class="step"><div class="step-num">3</div><b>Call</b><p>Create a deterministic private LiveKit room for both users.</p></div>
+          <div class="step"><div class="step-num">4</div><b>Alert</b><p>Open recipients see an incoming call sheet with Answer and Decline.</p></div>
+          <div class="step"><div class="step-num">5</div><b>Connect</b><p>The direct channel switches from ringing to live when the peer joins.</p></div>
+        </div>
+        <p class="lead">
+          Contacts include activity hints based on Clerk account activity. Pending
+          calls are short-lived and protect against self-calling or disabled users.
+        </p>
+      </div>
+      <div class="footer"><span>Direct comms</span><span>04</span></div>
+    </section>
+
+    <section class="slide">
+      <div class="content">
+        <p class="eyebrow">In-channel tools</p>
+        <h2>Everything needed while a channel is live</h2>
+        <div class="feature-list">
+          <div class="feature"><span class="dot"></span><p><b>People panel</b>See local and remote participants in the room.</p></div>
+          <div class="feature"><span class="dot"></span><p><b>Speaking indicators</b>Active speakers get visual status and animated VU bars.</p></div>
+          <div class="feature"><span class="dot"></span><p><b>Per-user volume</b>Remote participants can be adjusted independently.</p></div>
+          <div class="feature"><span class="dot"></span><p><b>Mute controls</b>Remote participant audio can be muted locally.</p></div>
+          <div class="feature"><span class="dot"></span><p><b>Text chat</b>Live data-channel chat works inside the same room.</p></div>
+          <div class="feature"><span class="dot"></span><p><b>Unread badges</b>Chat and replay tabs show unread counts while users are on another tab.</p></div>
+        </div>
+      </div>
+      <div class="footer"><span>Channel tools</span><span>05</span></div>
+    </section>
+
+    <section class="slide">
+      <div class="content">
+        <p class="eyebrow">Replay and feedback</p>
+        <h2>Missed audio can be replayed during the session</h2>
+        <div class="grid">
+          <div class="card"><strong>Browser-local replay</strong><span>Received audio clips are recorded in the browser while the channel page is open.</span></div>
+          <div class="card"><strong>Replay tab</strong><span>Users can listen back to recent clips without leaving the call.</span></div>
+          <div class="card"><strong>Auto cleanup</strong><span>Clips are capped and revoked locally; they disappear when leaving the channel.</span></div>
+          <div class="card"><strong>Incoming beep</strong><span>Optional tone plays when someone starts speaking.</span></div>
+          <div class="card"><strong>Vibration</strong><span>Supported phones can vibrate on incoming speech.</span></div>
+          <div class="card"><strong>Browser notifications</strong><span>When enabled, backgrounded tabs can show speaking notifications.</span></div>
+        </div>
+      </div>
+      <div class="footer"><span>Replay</span><span>06</span></div>
+    </section>
+
+    <section class="slide">
+      <div class="content">
+        <p class="eyebrow">PWA experience</p>
+        <h2>Installable mobile-first web app</h2>
+        <div class="feature-list">
+          <div class="feature"><span class="dot"></span><p><b>Manifest</b>Talkie ships a web app manifest with app name, icons, and display mode.</p></div>
+          <div class="feature"><span class="dot"></span><p><b>Service worker</b>The app registers a service worker and includes an offline fallback page.</p></div>
+          <div class="feature"><span class="dot"></span><p><b>iOS install hint</b>iPhone users get guidance to add the app to the home screen.</p></div>
+          <div class="feature"><span class="dot"></span><p><b>Home-screen icons</b>Standard, Apple touch, and maskable icons are generated.</p></div>
+          <div class="feature"><span class="dot"></span><p><b>Mobile shell</b>The UI is designed around a phone-sized viewport with touch-first controls.</p></div>
+          <div class="feature"><span class="dot"></span><p><b>White/red theme</b>Home, channel, and settings screens share the same brand styling.</p></div>
+        </div>
+      </div>
+      <div class="footer"><span>PWA</span><span>07</span></div>
+    </section>
+
+    <section class="slide">
+      <div class="content">
+        <p class="eyebrow">Settings</p>
+        <h2>User-controlled audio and alerts</h2>
+        <div class="grid">
+          <div class="card"><strong>Output volume</strong><span>Global output level controls remote audio playback.</span></div>
+          <div class="card"><strong>Beep toggle</strong><span>Users can turn incoming speech tones on or off.</span></div>
+          <div class="card"><strong>Vibration toggle</strong><span>Vibration can be disabled for devices that support it.</span></div>
+          <div class="card"><strong>Notification toggle</strong><span>The app requests browser notification permission only when the user enables it.</span></div>
+          <div class="card"><strong>Permission-aware UI</strong><span>The settings screen explains unsupported, blocked, and granted notification states.</span></div>
+          <div class="card"><strong>Local persistence</strong><span>Settings are saved in browser local storage.</span></div>
+        </div>
+      </div>
+      <div class="footer"><span>Settings</span><span>08</span></div>
+    </section>
+
+    <section class="slide">
+      <div class="content">
+        <p class="eyebrow">Architecture</p>
+        <h2>Current app stack</h2>
+        <div class="pill-row">
+          <span class="pill">Next.js</span>
+          <span class="pill">React</span>
+          <span class="pill">Clerk</span>
+          <span class="pill">LiveKit</span>
+          <span class="pill">PWA</span>
+          <span class="pill">Vercel</span>
+          <span class="pill">Local Storage</span>
+          <span class="pill">Service Worker</span>
+        </div>
+        <div class="feature-list">
+          <div class="feature"><span class="dot"></span><p><b>Frontend</b>Next.js app router with client screens for home, channel, settings, auth, and admin.</p></div>
+          <div class="feature"><span class="dot"></span><p><b>Realtime audio</b>LiveKit tokens are issued server-side with room grants for audio and data.</p></div>
+          <div class="feature"><span class="dot"></span><p><b>Identity</b>Clerk protects the app and supplies user records for names, search, and admin checks.</p></div>
+          <div class="feature"><span class="dot"></span><p><b>Local state</b>Recent channels, contacts, PINs, settings, and replay clips are browser-local.</p></div>
+        </div>
+      </div>
+      <div class="footer"><span>Stack</span><span>09</span></div>
+    </section>
+  </body>
+</html>
