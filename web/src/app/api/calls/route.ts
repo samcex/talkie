@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, clerkClient, currentUser } from '@clerk/nextjs/server';
 import { displayNameFor, userIsDisabled } from '@/lib/admin';
+import { ensureSchema, sql } from '@/lib/db';
 
 type PendingCall = {
   id: string;
@@ -14,6 +15,15 @@ type PendingCall = {
 };
 
 type CallStore = Map<string, PendingCall>;
+
+type PendingCallRow = {
+  id: string;
+  fromUserId: string;
+  fromName: string;
+  fromEmail: string;
+  createdAt: number | string;
+  expiresAt: number | string;
+};
 
 const TTL_MS = 45_000;
 
@@ -34,6 +44,14 @@ function prune(now = Date.now()) {
   }
 }
 
+async function pruneDb(now = Date.now()) {
+  const db = sql();
+  if (!db) return false;
+  await ensureSchema();
+  await db`delete from talkie_pending_calls where expires_at <= ${now}`;
+  return true;
+}
+
 export async function GET() {
   const { userId } = await auth();
   if (!userId) {
@@ -41,6 +59,32 @@ export async function GET() {
   }
 
   const now = Date.now();
+  const db = sql();
+  if (db) {
+    await pruneDb(now);
+    const calls = (await db`
+      select
+        id,
+        from_user_id as "fromUserId",
+        from_name as "fromName",
+        from_email as "fromEmail",
+        created_at as "createdAt",
+        expires_at as "expiresAt"
+      from talkie_pending_calls
+      where target_user_id = ${userId}
+      order by created_at desc
+    `) as PendingCallRow[];
+    return NextResponse.json({
+      calls: calls.map((call) => ({
+        ...call,
+        initials: initialsFor(call.fromName as string),
+        createdAt: Number(call.createdAt),
+        expiresAt: Number(call.expiresAt),
+      })),
+      persistent: true,
+    });
+  }
+
   prune(now);
   const calls = [...store().values()]
     .filter((call) => call.targetUserId === userId)
@@ -55,7 +99,7 @@ export async function GET() {
       expiresAt: call.expiresAt,
     }));
 
-  return NextResponse.json({ calls });
+  return NextResponse.json({ calls, persistent: false });
 }
 
 export async function POST(req: NextRequest) {
@@ -96,7 +140,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  prune();
+  const db = sql();
+  if (db) {
+    await pruneDb();
+  } else {
+    prune();
+  }
   const id = crypto.randomUUID();
   const fromName = displayNameFor(user);
   const targetName = displayNameFor(target);
@@ -111,7 +160,33 @@ export async function POST(req: NextRequest) {
     createdAt: now,
     expiresAt: now + TTL_MS,
   };
-  store().set(id, call);
+  if (db) {
+    await ensureSchema();
+    await db`
+      insert into talkie_pending_calls (
+        id,
+        from_user_id,
+        from_name,
+        from_email,
+        target_user_id,
+        target_name,
+        created_at,
+        expires_at
+      )
+      values (
+        ${call.id},
+        ${call.fromUserId},
+        ${call.fromName},
+        ${call.fromEmail},
+        ${call.targetUserId},
+        ${call.targetName},
+        ${call.createdAt},
+        ${call.expiresAt}
+      )
+    `;
+  } else {
+    store().set(id, call);
+  }
 
   return NextResponse.json({
     call: {
@@ -121,6 +196,7 @@ export async function POST(req: NextRequest) {
       createdAt: call.createdAt,
       expiresAt: call.expiresAt,
     },
+    persistent: Boolean(db),
   });
 }
 
@@ -135,15 +211,25 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'id is required' }, { status: 400 });
   }
 
-  const call = store().get(id);
-  if (
-    call &&
-    (call.targetUserId === userId || call.fromUserId === userId)
-  ) {
-    store().delete(id);
+  const db = sql();
+  if (db) {
+    await ensureSchema();
+    await db`
+      delete from talkie_pending_calls
+      where id = ${id}
+        and (target_user_id = ${userId} or from_user_id = ${userId})
+    `;
+  } else {
+    const call = store().get(id);
+    if (
+      call &&
+      (call.targetUserId === userId || call.fromUserId === userId)
+    ) {
+      store().delete(id);
+    }
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, persistent: Boolean(db) });
 }
 
 function initialsFor(name: string): string {

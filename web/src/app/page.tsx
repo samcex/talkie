@@ -64,6 +64,27 @@ export default function HomePage() {
     if (!isLoaded || !user) return;
     let cancelled = false;
 
+    async function loadContacts() {
+      try {
+        const res = await fetch('/api/contacts', { cache: 'no-store' });
+        if (!res.ok) return;
+        const body = (await res.json()) as { contacts?: Contact[] };
+        if (!cancelled && body.contacts && body.contacts.length > 0) {
+          setContacts(body.contacts);
+        }
+      } catch {}
+    }
+
+    loadContacts();
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, user]);
+
+  useEffect(() => {
+    if (!isLoaded || !user) return;
+    let cancelled = false;
+
     async function loadCalls() {
       try {
         const res = await fetch('/api/calls', { cache: 'no-store' });
@@ -167,15 +188,15 @@ export default function HomePage() {
   }
 
   async function startDirectCall(target: DirectUser | Contact) {
-    setContacts(
-      saveContact({
-        id: target.id,
-        name: target.name,
-        email: target.email,
-        initials: target.initials,
-        lastActiveAt: target.lastActiveAt,
-      }),
-    );
+    const contact = {
+      id: target.id,
+      name: target.name,
+      email: target.email,
+      initials: target.initials,
+      lastActiveAt: target.lastActiveAt,
+    };
+    setContacts(saveContact(contact));
+    persistContact(contact);
     await fetch('/api/calls', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -190,10 +211,14 @@ export default function HomePage() {
 
   function addContact(target: DirectUser) {
     setContacts(saveContact(target));
+    persistContact(target);
   }
 
   function removeContact(id: string) {
     setContacts(forgetContact(id));
+    fetch(`/api/contacts?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    }).catch(() => {});
   }
 
   async function acceptCall(call: IncomingCall) {
@@ -201,15 +226,15 @@ export default function HomePage() {
       method: 'DELETE',
     }).catch(() => {});
     setIncomingCalls((prev) => prev.filter((c) => c.id !== call.id));
-    setContacts(
-      saveContact({
-        id: call.fromUserId,
-        name: call.fromName,
-        email: call.fromEmail,
-        initials: call.initials,
-        lastActiveAt: call.createdAt,
-      }),
-    );
+    const contact = {
+      id: call.fromUserId,
+      name: call.fromName,
+      email: call.fromEmail,
+      initials: call.initials,
+      lastActiveAt: call.createdAt,
+    };
+    setContacts(saveContact(contact));
+    persistContact(contact);
     router.push(
       `/channel/direct?peer=${encodeURIComponent(call.fromUserId)}&title=${encodeURIComponent(
         call.fromName,
@@ -662,6 +687,14 @@ function activityClass(ts: number | null) {
   if (diff < 15 * 60_000) return 'bg-red-600';
   if (diff < 24 * 60 * 60_000) return 'bg-amber-400';
   return 'bg-zinc-300';
+}
+
+function persistContact(contact: Omit<Contact, 'savedAt'>) {
+  fetch('/api/contacts', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(contact),
+  }).catch(() => {});
 }
 
 function LockIcon({ className }: { className?: string }) {

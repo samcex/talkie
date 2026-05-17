@@ -10,6 +10,7 @@
   "dependencies": {
     "@clerk/nextjs": "^7.3.4",
     "@clerk/themes": "^2.4.57",
+    "@neondatabase/serverless": "^1.1.0",
     "livekit-client": "^2.19.0",
     "livekit-server-sdk": "^2.15.3",
     "next": "16.2.6",

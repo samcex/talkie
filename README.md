@@ -48,7 +48,22 @@ talkie/
    - `NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL`
    - `NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL`
    - `ADMIN_EMAILS`
+   - `DATABASE_URL` (Neon pooled Postgres connection string)
 5. Deploy.
+
+## Neon database
+
+Talkie uses Neon Postgres when `DATABASE_URL` is configured. It stores:
+
+- saved contacts per Clerk user
+- pending direct-call alerts
+
+Create a Neon project, copy the pooled connection string, and add it as
+`DATABASE_URL` in Vercel. After deploy, sign in as an admin and open
+`/api/db/init` once to verify the connection and create the tables.
+
+The app also creates the schema lazily from API routes, so the initializer is
+mainly a quick configuration check.
 
 ## Android
 
