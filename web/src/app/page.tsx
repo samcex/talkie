@@ -27,6 +27,16 @@ type DirectUser = {
   lastActiveAt: number | null;
 };
 
+type IncomingCall = {
+  id: string;
+  fromUserId: string;
+  fromName: string;
+  fromEmail: string;
+  initials: string;
+  createdAt: number;
+  expiresAt: number;
+};
+
 export default function HomePage() {
   const router = useRouter();
   const { user, isLoaded } = useUser();
@@ -43,11 +53,33 @@ export default function HomePage() {
   const [directUsers, setDirectUsers] = useState<DirectUser[]>([]);
   const [directLoading, setDirectLoading] = useState(false);
   const [directError, setDirectError] = useState<string | null>(null);
+  const [incomingCalls, setIncomingCalls] = useState<IncomingCall[]>([]);
 
   useEffect(() => {
     setRecent(getRecentChannels());
     setContacts(getContacts());
   }, []);
+
+  useEffect(() => {
+    if (!isLoaded || !user) return;
+    let cancelled = false;
+
+    async function loadCalls() {
+      try {
+        const res = await fetch('/api/calls', { cache: 'no-store' });
+        if (!res.ok) return;
+        const body = (await res.json()) as { calls?: IncomingCall[] };
+        if (!cancelled) setIncomingCalls(body.calls ?? []);
+      } catch {}
+    }
+
+    loadCalls();
+    const timer = window.setInterval(loadCalls, 4000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [isLoaded, user]);
 
   useEffect(() => {
     const q = directQuery.trim();
@@ -134,7 +166,7 @@ export default function HomePage() {
     setRecent(getRecentChannels());
   }
 
-  function startDirectCall(target: DirectUser | Contact) {
+  async function startDirectCall(target: DirectUser | Contact) {
     setContacts(
       saveContact({
         id: target.id,
@@ -144,6 +176,11 @@ export default function HomePage() {
         lastActiveAt: target.lastActiveAt,
       }),
     );
+    await fetch('/api/calls', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ targetUserId: target.id }),
+    }).catch(() => {});
     router.push(
       `/channel/direct?peer=${encodeURIComponent(target.id)}&ring=1&title=${encodeURIComponent(
         target.name,
@@ -157,6 +194,34 @@ export default function HomePage() {
 
   function removeContact(id: string) {
     setContacts(forgetContact(id));
+  }
+
+  async function acceptCall(call: IncomingCall) {
+    await fetch(`/api/calls?id=${encodeURIComponent(call.id)}`, {
+      method: 'DELETE',
+    }).catch(() => {});
+    setIncomingCalls((prev) => prev.filter((c) => c.id !== call.id));
+    setContacts(
+      saveContact({
+        id: call.fromUserId,
+        name: call.fromName,
+        email: call.fromEmail,
+        initials: call.initials,
+        lastActiveAt: call.createdAt,
+      }),
+    );
+    router.push(
+      `/channel/direct?peer=${encodeURIComponent(call.fromUserId)}&title=${encodeURIComponent(
+        call.fromName,
+      )}`,
+    );
+  }
+
+  async function declineCall(call: IncomingCall) {
+    await fetch(`/api/calls?id=${encodeURIComponent(call.id)}`, {
+      method: 'DELETE',
+    }).catch(() => {});
+    setIncomingCalls((prev) => prev.filter((c) => c.id !== call.id));
   }
 
   const greetingName =
@@ -468,6 +533,47 @@ export default function HomePage() {
             </section>
           )}
         </div>
+
+        {incomingCalls.length > 0 && (
+          <div className="absolute inset-0 z-50 flex flex-col justify-end">
+            <div className="absolute inset-0 bg-zinc-950/35 backdrop-blur-sm" />
+            <div className="relative rounded-t-[2.5rem] border-t border-red-200 bg-white p-6 shadow-[0_-20px_50px_rgba(24,24,27,0.16)]">
+              <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-zinc-300" />
+              <div className="text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-600 text-xl font-black text-white">
+                  {incomingCalls[0].initials}
+                </div>
+                <div className="mt-4 text-[10px] font-bold uppercase tracking-[0.22em] text-red-500">
+                  Incoming Direct Call
+                </div>
+                <h2 className="mt-1 truncate text-2xl font-black tracking-tight text-zinc-950">
+                  {incomingCalls[0].fromName}
+                </h2>
+                {incomingCalls[0].fromEmail && (
+                  <p className="mt-1 truncate font-mono text-xs text-zinc-500">
+                    {incomingCalls[0].fromEmail}
+                  </p>
+                )}
+              </div>
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => declineCall(incomingCalls[0])}
+                  className="rounded-2xl bg-zinc-200 py-4 text-sm font-bold text-zinc-800 shadow-tactile-up active:shadow-tactile-down"
+                >
+                  Decline
+                </button>
+                <button
+                  type="button"
+                  onClick={() => acceptCall(incomingCalls[0])}
+                  className="rounded-2xl bg-red-600 py-4 text-sm font-black uppercase tracking-wider text-white shadow-[0_10px_20px_-5px_rgba(220,38,38,0.4)] active:scale-[0.98]"
+                >
+                  Answer
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {pinPrompt && (
           <div className="absolute inset-0 z-50 flex flex-col justify-end">
