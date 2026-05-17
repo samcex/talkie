@@ -9,9 +9,9 @@ export function Logo({ size = 32 }: { size?: number }) {
       aria-label="Talkie"
     >
       <rect width="64" height="64" rx="14" fill="#0a0a0a" />
-      <rect x="13" y="12" width="14" height="6" rx="2" fill="#10b981" />
-      <rect x="19" y="2" width="2" height="11" rx="1" fill="#10b981" />
-      <circle cx="20" cy="2" r="2" fill="#10b981" />
+      <rect x="13" y="12" width="14" height="6" rx="2" fill="#dc2626" />
+      <rect x="19" y="2" width="2" height="11" rx="1" fill="#dc2626" />
+      <circle cx="20" cy="2" r="2" fill="#dc2626" />
       <rect
         x="14"
         y="16"
@@ -19,11 +19,11 @@ export function Logo({ size = 32 }: { size?: number }) {
         height="44"
         rx="6"
         fill="#171717"
-        stroke="#10b981"
+        stroke="#dc2626"
         strokeWidth="2"
       />
       <rect x="18" y="20" width="28" height="14" rx="2" fill="#052e1a" />
-      <g fill="#10b981" opacity="0.65">
+      <g fill="#dc2626" opacity="0.65">
         <rect x="21" y="23" width="22" height="1.5" rx="0.75" />
         <rect x="21" y="26" width="22" height="1.5" rx="0.75" />
         <rect x="21" y="29" width="22" height="1.5" rx="0.75" />
@@ -33,12 +33,12 @@ export function Logo({ size = 32 }: { size?: number }) {
         cy="46"
         r="8"
         fill="#0a0a0a"
-        stroke="#10b981"
+        stroke="#dc2626"
         strokeWidth="2"
       />
-      <circle cx="32" cy="46" r="4" fill="#10b981" />
-      <circle cx="42" cy="11" r="2" fill="#10b981" />
-      <circle cx="46" cy="11" r="2" fill="#10b981" opacity="0.5" />
+      <circle cx="32" cy="46" r="4" fill="#dc2626" />
+      <circle cx="42" cy="11" r="2" fill="#dc2626" />
+      <circle cx="46" cy="11" r="2" fill="#dc2626" opacity="0.5" />
     </svg>
   );
 }

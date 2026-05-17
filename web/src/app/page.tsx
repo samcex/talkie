@@ -158,7 +158,7 @@ export default function HomePage() {
             {isAdmin && (
               <Link
                 href="/admin"
-                className="rounded-full bg-emerald-500/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-emerald-300 inset-border"
+                className="rounded-full bg-red-600/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-red-300 inset-border"
               >
                 Admin
               </Link>
@@ -189,7 +189,7 @@ export default function HomePage() {
               <path
                 d="M-10,50 Q40,20 100,50 T300,50"
                 fill="none"
-                stroke="#10b981"
+                stroke="#dc2626"
                 strokeWidth="0.5"
               />
               <path
@@ -202,8 +202,8 @@ export default function HomePage() {
             <div className="relative z-10 mb-6 flex items-start justify-between gap-4">
               <div>
                 <div className="mb-1 flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
-                  <span className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400">
+                  <span className="h-2 w-2 rounded-full bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.8)]" />
+                  <span className="text-xs font-bold uppercase tracking-[0.2em] text-red-500">
                     Secure Channel
                   </span>
                 </div>
@@ -225,7 +225,7 @@ export default function HomePage() {
                 value={channel}
                 onChange={(e) => setChannel(e.target.value)}
                 placeholder="general"
-                className="w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 py-4 font-mono text-lg text-white outline-none transition focus:border-emerald-500/60"
+                className="w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 py-4 font-mono text-lg text-white outline-none transition focus:border-red-600/60"
                 autoFocus
                 required
               />
@@ -235,7 +235,7 @@ export default function HomePage() {
               <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
                 PIN
                 <span className="text-zinc-600">Optional</span>
-                {pin.trim() && <LockIcon className="h-3 w-3 text-emerald-400" />}
+                {pin.trim() && <LockIcon className="h-3 w-3 text-red-500" />}
               </span>
               <input
                 type="password"
@@ -244,13 +244,13 @@ export default function HomePage() {
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
                 placeholder="Leave blank for public"
-                className="w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 py-4 font-mono text-lg text-white outline-none transition focus:border-emerald-500/60"
+                className="w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 py-4 font-mono text-lg text-white outline-none transition focus:border-red-600/60"
               />
             </label>
 
             <button
               type="submit"
-              className="relative z-10 mt-6 w-full rounded-2xl bg-emerald-500 py-4 text-base font-black uppercase tracking-wider text-black shadow-[0_10px_20px_-5px_rgba(16,185,129,0.4)] transition active:scale-[0.98]"
+              className="relative z-10 mt-6 w-full rounded-2xl bg-red-600 py-4 text-base font-black uppercase tracking-wider text-black shadow-[0_10px_20px_-5px_rgba(220,38,38,0.4)] transition active:scale-[0.98]"
             >
               {pin.trim() ? 'Join Private' : 'Connect'}
             </button>
@@ -266,7 +266,7 @@ export default function HomePage() {
                   Search a teammate and open a private one-to-one channel.
                 </p>
               </div>
-              <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+              <span className="rounded-full bg-red-600/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-red-300">
                 1:1
               </span>
             </div>
@@ -277,7 +277,7 @@ export default function HomePage() {
                 value={directQuery}
                 onChange={(e) => setDirectQuery(e.target.value)}
                 placeholder="Search by name or email"
-                className="w-full rounded-2xl border border-white/10 bg-zinc-950 py-4 pl-11 pr-4 text-sm text-white outline-none transition focus:border-emerald-500/60"
+                className="w-full rounded-2xl border border-white/10 bg-zinc-950 py-4 pl-11 pr-4 text-sm text-white outline-none transition focus:border-red-600/60"
               />
             </div>
             {directError && (
@@ -304,7 +304,7 @@ export default function HomePage() {
                   onClick={() => startDirectCall(u)}
                   className="flex w-full items-center gap-3 rounded-2xl bg-zinc-950 px-3 py-3 text-left transition active:scale-[0.99] inset-border hover:bg-zinc-900"
                 >
-                  <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500 text-sm font-black text-black">
+                  <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-red-600 text-sm font-black text-black">
                     {u.initials}
                   </span>
                   <span className="min-w-0 flex-1">
@@ -317,7 +317,7 @@ export default function HomePage() {
                       </span>
                     )}
                   </span>
-                  <span className="rounded-full bg-emerald-500 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-black">
+                  <span className="rounded-full bg-red-600 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-black">
                     Call
                   </span>
                 </button>
@@ -416,7 +416,7 @@ export default function HomePage() {
                   })
                 }
                 placeholder="PIN"
-                className="mt-8 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 py-5 text-center font-mono text-2xl font-bold text-emerald-400 outline-none focus:border-emerald-500/60"
+                className="mt-8 w-full rounded-2xl border border-white/10 bg-zinc-950 px-4 py-5 text-center font-mono text-2xl font-bold text-red-500 outline-none focus:border-red-600/60"
               />
               {pinPrompt.error && (
                 <div className="mt-3 text-center text-xs text-red-400">
@@ -433,7 +433,7 @@ export default function HomePage() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-2xl bg-emerald-500 py-4 text-sm font-black uppercase tracking-wider text-black shadow-[0_10px_20px_-5px_rgba(16,185,129,0.4)] active:scale-[0.98]"
+                  className="rounded-2xl bg-red-600 py-4 text-sm font-black uppercase tracking-wider text-black shadow-[0_10px_20px_-5px_rgba(220,38,38,0.4)] active:scale-[0.98]"
                 >
                   Join
                 </button>

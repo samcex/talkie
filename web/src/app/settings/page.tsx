@@ -68,7 +68,7 @@ export default function SettingsPage() {
               step={0.05}
               value={s.outputVolume}
               onChange={(e) => update('outputVolume', Number(e.target.value))}
-              className="w-full accent-emerald-500"
+              className="w-full accent-red-600"
             />
           </div>
 
@@ -144,7 +144,7 @@ function Toggle({
         checked={checked}
         disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
-        className="mt-1 h-4 w-4 accent-emerald-500"
+        className="mt-1 h-4 w-4 accent-red-600"
       />
       <div className="flex-1">
         <div className="text-sm">{label}</div>

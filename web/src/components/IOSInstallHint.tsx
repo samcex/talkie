@@ -24,7 +24,7 @@ export function IOSInstallHint() {
   if (!show) return null;
 
   return (
-    <div className="rounded-2xl bg-neutral-900 border border-emerald-700/50 p-4 text-xs space-y-2 relative">
+    <div className="rounded-2xl bg-neutral-900 border border-red-700/50 p-4 text-xs space-y-2 relative">
       <button
         onClick={() => {
           setShow(false);
@@ -35,7 +35,7 @@ export function IOSInstallHint() {
       >
         ✕
       </button>
-      <div className="flex items-center gap-2 text-emerald-300 font-semibold">
+      <div className="flex items-center gap-2 text-red-300 font-semibold">
         <ShareIcon className="w-3.5 h-3.5" />
         Tip for iPhone
       </div>
@@ -43,7 +43,7 @@ export function IOSInstallHint() {
         Safari asks for microphone permission on every refresh. To fix it,
         install Talkie as an app: tap the <ShareIcon className="inline w-3 h-3 mb-0.5" /> Share
         button below, then{' '}
-        <span className="text-emerald-300 font-medium">Add to Home Screen</span>.
+        <span className="text-red-300 font-medium">Add to Home Screen</span>.
         Open Talkie from your home screen and the mic prompt only appears once.
       </div>
     </div>

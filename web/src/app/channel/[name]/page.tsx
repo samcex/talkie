@@ -637,7 +637,7 @@ export default function ChannelPage() {
                 Channel{isPrivate && ' Private'}
               </div>
               <div className="flex min-w-0 items-center gap-2">
-                {isPrivate && <LockIcon className="h-3.5 w-3.5 flex-shrink-0 text-emerald-400" />}
+                {isPrivate && <LockIcon className="h-3.5 w-3.5 flex-shrink-0 text-red-500" />}
                 <h1 className="truncate text-base font-black uppercase tracking-tight text-white">
                   {displayChannelName}
                 </h1>
@@ -679,7 +679,7 @@ export default function ChannelPage() {
               <path
                 d="M-10,50 Q40,20 100,50 T300,50"
                 fill="none"
-                stroke="#10b981"
+                stroke="#dc2626"
                 strokeWidth="0.5"
               />
               <path
@@ -695,11 +695,11 @@ export default function ChannelPage() {
                   <span
                     className={`h-2 w-2 rounded-full ${
                       connected
-                        ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]'
+                        ? 'bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.8)]'
                         : 'bg-zinc-600'
                     }`}
                   />
-                  <span className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400">
+                  <span className="text-xs font-bold uppercase tracking-[0.2em] text-red-500">
                   {isDirect
                     ? connected
                       ? 'Direct Link'
@@ -793,7 +793,7 @@ export default function ChannelPage() {
               className="group relative flex aspect-square w-14 flex-col items-center justify-center gap-1 rounded-2xl bg-zinc-900 text-zinc-500 transition active:scale-95 shadow-tactile-up"
             >
               {unreadChat > 0 && (
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-emerald-500" />
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-600" />
               )}
               <ChatIcon className="h-5 w-5 text-zinc-400 group-hover:text-white" />
               <span className="text-[9px] font-bold uppercase">Chat</span>
@@ -820,7 +820,7 @@ export default function ChannelPage() {
                 }}
                 className={`absolute z-10 flex h-24 w-24 select-none flex-col items-center justify-center gap-1 rounded-full border transition-all duration-150 focus:outline-none ${
                   transmitting
-                    ? 'translate-y-1 border-emerald-500 bg-gradient-to-b from-zinc-800 to-zinc-950 shadow-ptt-active'
+                    ? 'translate-y-1 border-red-600 bg-gradient-to-b from-zinc-800 to-zinc-950 shadow-ptt-active'
                     : connected
                       ? 'border-zinc-600 bg-gradient-to-b from-zinc-700 to-zinc-900 shadow-ptt-idle'
                       : 'border-zinc-700 bg-zinc-800 opacity-60'
@@ -829,7 +829,7 @@ export default function ChannelPage() {
                 <span
                   className={`mb-1 h-2 w-2 rounded-full ${
                     transmitting
-                      ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,1)]'
+                      ? 'bg-red-600 shadow-[0_0_15px_rgba(220,38,38,1)]'
                       : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]'
                   }`}
                 />
@@ -1022,7 +1022,7 @@ function StatusDot({ state }: { state: ConnectionState }) {
       label: 'offline',
     },
     [ConnectionState.Connecting]: { color: 'bg-amber-400', label: 'connecting' },
-    [ConnectionState.Connected]: { color: 'bg-emerald-400', label: 'live' },
+    [ConnectionState.Connected]: { color: 'bg-red-500', label: 'live' },
     [ConnectionState.Reconnecting]: {
       color: 'bg-amber-400',
       label: 'reconnecting',
@@ -1055,7 +1055,7 @@ function TabButton({
       onClick={onClick}
       className={`rounded-xl py-3 text-xs font-bold transition ${
         active
-          ? 'bg-emerald-500 text-black'
+          ? 'bg-red-600 text-black'
           : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
       }`}
     >
@@ -1096,7 +1096,7 @@ function PeoplePanel({
           key={p.identity}
           className={`relative overflow-hidden rounded-2xl border p-3 inset-border ${
             p.isSpeaking
-              ? 'border-emerald-500/30 bg-zinc-900/80 shadow-[0_0_15px_-5px_rgba(16,185,129,0.25)]'
+              ? 'border-red-600/30 bg-zinc-900/80 shadow-[0_0_15px_-5px_rgba(220,38,38,0.25)]'
               : 'border-transparent bg-zinc-900/55'
           }`}
         >
@@ -1104,7 +1104,7 @@ function PeoplePanel({
             <span
               className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-black uppercase ${
                 p.isSpeaking
-                  ? 'bg-emerald-500 text-black'
+                  ? 'bg-red-600 text-black'
                   : 'bg-zinc-800 text-zinc-500'
               }`}
             >
@@ -1153,7 +1153,7 @@ function PeoplePanel({
                   onVolumeChange(p.identity, Number(e.target.value))
                 }
                 disabled={p.muted}
-                className="flex-1 accent-emerald-500"
+                className="flex-1 accent-red-600"
               />
               <span className="w-9 text-right font-mono text-[10px] tabular-nums text-zinc-500">
                 {Math.round(p.volume * 100)}%
@@ -1161,7 +1161,7 @@ function PeoplePanel({
             </div>
           )}
           {p.isSpeaking && (
-            <div className="pointer-events-none absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-emerald-500/10 to-transparent" />
+            <div className="pointer-events-none absolute right-0 top-0 h-full w-16 bg-gradient-to-l from-red-600/10 to-transparent" />
           )}
         </li>
       ))}
@@ -1204,7 +1204,7 @@ function ChatPanel({
               <div
                 className={`max-w-[80%] rounded-2xl px-3 py-2 ${
                   isMine
-                    ? 'bg-emerald-500 text-black'
+                    ? 'bg-red-600 text-black'
                     : 'bg-zinc-800 text-zinc-100'
                 }`}
               >
@@ -1218,7 +1218,7 @@ function ChatPanel({
                 </div>
                 <div
                   className={`text-[10px] mt-1 ${
-                    isMine ? 'text-emerald-950/70' : 'text-zinc-500'
+                    isMine ? 'text-red-950/70' : 'text-zinc-500'
                   }`}
                 >
                   {timeStr(m.ts)}
@@ -1241,12 +1241,12 @@ function ChatPanel({
           onChange={(e) => setDraft(e.target.value)}
           placeholder={connected ? 'Type a message…' : 'Not connected'}
           disabled={!connected}
-          className="flex-1 rounded-2xl border border-zinc-800 bg-zinc-950 px-3 py-3 text-sm outline-none focus:border-emerald-500/50 disabled:opacity-50"
+          className="flex-1 rounded-2xl border border-zinc-800 bg-zinc-950 px-3 py-3 text-sm outline-none focus:border-red-600/50 disabled:opacity-50"
         />
         <button
           type="submit"
           disabled={!connected || !draft.trim()}
-          className="rounded-2xl bg-emerald-500 px-4 text-sm font-black text-black disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-2xl bg-red-600 px-4 text-sm font-black text-black disabled:cursor-not-allowed disabled:opacity-40"
         >
           Send
         </button>

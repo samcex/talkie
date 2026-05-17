@@ -146,7 +146,7 @@ export default async function AdminPage() {
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         {effectiveAdmin && (
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-700/50">
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-red-600/15 text-red-300 border border-red-700/50">
                             admin{isEnvAdmin && !role.includes('admin') ? ' (env)' : ''}
                           </span>
                         )}
@@ -205,7 +205,7 @@ export default async function AdminPage() {
                               type="submit"
                               className={`text-[11px] px-2 py-1 rounded border ${
                                 disabled
-                                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-700/50 hover:bg-emerald-500/20'
+                                  ? 'bg-red-600/15 text-red-300 border-red-700/50 hover:bg-red-600/20'
                                   : 'bg-red-500/15 text-red-300 border-red-700/50 hover:bg-red-500/20'
                               }`}
                             >
