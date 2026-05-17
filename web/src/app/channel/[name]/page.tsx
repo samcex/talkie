@@ -624,10 +624,10 @@ export default function ChannelPage() {
   const connected = state === ConnectionState.Connected;
 
   return (
-    <main className="min-h-dvh talkie-shell flex justify-center text-zinc-100">
-      <div className="talkie-phone relative flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-zinc-950">
+    <main className="min-h-dvh talkie-shell flex justify-center text-zinc-950">
+      <div className="talkie-phone relative flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-white">
         <div className="talkie-noise" />
-        <header className="relative z-20 flex shrink-0 items-center justify-between border-b border-zinc-900 bg-zinc-950/95 px-4 pb-3 pt-10">
+        <header className="relative z-20 flex shrink-0 items-center justify-between border-b border-zinc-200 bg-white/95 px-4 pb-3 pt-10">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center">
               <Logo size={28} />
@@ -638,7 +638,7 @@ export default function ChannelPage() {
               </div>
               <div className="flex min-w-0 items-center gap-2">
                 {isPrivate && <LockIcon className="h-3.5 w-3.5 flex-shrink-0 text-red-500" />}
-                <h1 className="truncate text-base font-black uppercase tracking-tight text-white">
+                <h1 className="truncate text-base font-black uppercase tracking-tight text-zinc-950">
                   {displayChannelName}
                 </h1>
               </div>
@@ -649,13 +649,13 @@ export default function ChannelPage() {
             <Link
               href="/settings"
               aria-label="Settings"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-400 transition active:scale-95 hover:bg-zinc-900 hover:text-white"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-600 transition active:scale-95 hover:bg-zinc-100 hover:text-zinc-950"
             >
               <SettingsIcon className="h-4 w-4" />
             </Link>
             <button
               onClick={() => router.push('/')}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-400 transition active:scale-95 hover:bg-zinc-900 hover:text-white"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-600 transition active:scale-95 hover:bg-zinc-100 hover:text-zinc-950"
               aria-label="Leave channel"
             >
               <LeaveIcon className="h-4 w-4" />
@@ -664,7 +664,7 @@ export default function ChannelPage() {
         </header>
 
         {error && (
-          <div className="relative z-20 border-b border-red-800/60 bg-red-950/80 px-4 py-3 text-sm text-red-200">
+          <div className="relative z-20 border-b border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}
@@ -709,11 +709,11 @@ export default function ChannelPage() {
                       : 'Link Pending'}
                   </span>
                 </div>
-                <div className="text-3xl font-black uppercase tracking-tight text-white">
+                <div className="text-3xl font-black uppercase tracking-tight text-zinc-950">
                   {displayChannelName}
                 </div>
               </div>
-              <div className="rounded-xl bg-zinc-800/80 p-2 text-zinc-400 inset-border">
+              <div className="rounded-xl bg-zinc-100 p-2 text-zinc-600 inset-border">
                 {isPrivate ? (
                   <LockIcon className="h-5 w-5" />
                 ) : (
@@ -726,7 +726,7 @@ export default function ChannelPage() {
                 <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
                   Members
                 </div>
-                <div className="font-mono text-lg text-zinc-200">
+                <div className="font-mono text-lg text-zinc-800">
                   {participants.length.toString().padStart(2, '0')}
                 </div>
               </div>
@@ -734,14 +734,14 @@ export default function ChannelPage() {
                 <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
                   Mode
                 </div>
-                <div className="font-mono text-lg text-zinc-200">
+                <div className="font-mono text-lg text-zinc-800">
                   {isDirect ? '1:1' : isPrivate ? 'PIN' : 'OPEN'}
                 </div>
               </div>
             </div>
           </div>
 
-          <nav className="mt-5 grid grid-cols-3 gap-2 rounded-2xl bg-zinc-900/70 p-1 inset-border">
+          <nav className="mt-5 grid grid-cols-3 gap-2 rounded-2xl bg-white/90 p-1 inset-border">
             <TabButton active={tab === 'people'} onClick={() => selectTab('people')}>
               People <Count value={participants.length} />
             </TabButton>
@@ -786,16 +786,16 @@ export default function ChannelPage() {
           </div>
         </section>
 
-        <footer className="glass-panel absolute bottom-0 left-0 right-0 z-40 flex h-40 items-center justify-center rounded-t-[2.5rem] border-t border-zinc-800 px-6 pb-8 pt-2">
+        <footer className="glass-panel absolute bottom-0 left-0 right-0 z-40 flex h-40 items-center justify-center rounded-t-[2.5rem] border-t border-zinc-200 px-6 pb-8 pt-2">
           <div className="relative flex w-full max-w-sm items-center justify-between">
             <button
               onClick={() => selectTab('chat')}
-              className="group relative flex aspect-square w-14 flex-col items-center justify-center gap-1 rounded-2xl bg-zinc-900 text-zinc-500 transition active:scale-95 shadow-tactile-up"
+              className="group relative flex aspect-square w-14 flex-col items-center justify-center gap-1 rounded-2xl bg-zinc-100 text-zinc-500 transition active:scale-95 shadow-tactile-up"
             >
               {unreadChat > 0 && (
                 <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-600" />
               )}
-              <ChatIcon className="h-5 w-5 text-zinc-400 group-hover:text-white" />
+              <ChatIcon className="h-5 w-5 text-zinc-600 group-hover:text-zinc-950" />
               <span className="text-[9px] font-bold uppercase">Chat</span>
             </button>
 
@@ -804,7 +804,7 @@ export default function ChannelPage() {
                 transmitting ? 'ptt-halo-active' : ''
               }`}
             >
-              <div className="absolute inset-0 rounded-full border-4 border-zinc-950 bg-zinc-900 shadow-[inset_0_4px_10px_rgba(0,0,0,0.8),_0_2px_0_rgba(255,255,255,0.05)]" />
+              <div className="absolute inset-0 rounded-full border-4 border-zinc-200 bg-white shadow-[inset_0_4px_10px_rgba(24,24,27,0.12),_0_2px_0_rgba(255,255,255,0.8)]" />
               <button
                 disabled={!connected}
                 onMouseDown={startTalking}
@@ -820,10 +820,10 @@ export default function ChannelPage() {
                 }}
                 className={`absolute z-10 flex h-24 w-24 select-none flex-col items-center justify-center gap-1 rounded-full border transition-all duration-150 focus:outline-none ${
                   transmitting
-                    ? 'translate-y-1 border-red-600 bg-gradient-to-b from-zinc-800 to-zinc-950 shadow-ptt-active'
+                    ? 'translate-y-1 border-red-700 bg-gradient-to-b from-red-600 to-red-700 text-white shadow-ptt-active'
                     : connected
-                      ? 'border-zinc-600 bg-gradient-to-b from-zinc-700 to-zinc-900 shadow-ptt-idle'
-                      : 'border-zinc-700 bg-zinc-800 opacity-60'
+                      ? 'border-red-700 bg-gradient-to-b from-red-500 to-red-700 text-white shadow-ptt-idle'
+                      : 'border-zinc-300 bg-zinc-200 opacity-60'
                 }`}
               >
                 <span
@@ -833,8 +833,8 @@ export default function ChannelPage() {
                       : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]'
                   }`}
                 />
-                <MicIcon className="h-6 w-6 text-zinc-200" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+                <MicIcon className={`h-6 w-6 ${connected ? 'text-white' : 'text-zinc-500'}`} />
+                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${connected ? 'text-white' : 'text-zinc-500'}`}>
                   {transmitting ? 'On Air' : connected ? 'Push' : 'Wait'}
                 </span>
               </button>
@@ -842,9 +842,9 @@ export default function ChannelPage() {
 
             <button
               onClick={() => selectTab('replays')}
-              className="group flex aspect-square w-14 flex-col items-center justify-center gap-1 rounded-2xl bg-zinc-900 text-zinc-500 transition active:scale-95 shadow-tactile-up"
+              className="group flex aspect-square w-14 flex-col items-center justify-center gap-1 rounded-2xl bg-zinc-100 text-zinc-500 transition active:scale-95 shadow-tactile-up"
             >
-              <ReplayIcon className="h-5 w-5 text-zinc-400 group-hover:text-white" />
+              <ReplayIcon className="h-5 w-5 text-zinc-600 group-hover:text-zinc-950" />
               <span className="text-[9px] font-bold uppercase">Replay</span>
             </button>
           </div>
@@ -1034,7 +1034,7 @@ function StatusDot({ state }: { state: ConnectionState }) {
   };
   const v = map[state] ?? map[ConnectionState.Disconnected];
   return (
-    <div className="flex items-center gap-2 rounded-full bg-zinc-900 px-3 py-2 font-mono text-[10px] uppercase text-zinc-400 inset-border">
+    <div className="flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-2 font-mono text-[10px] uppercase text-zinc-600 inset-border">
       <span className={`w-2 h-2 rounded-full ${v.color}`} />
       {v.label}
     </div>
@@ -1055,8 +1055,8 @@ function TabButton({
       onClick={onClick}
       className={`rounded-xl py-3 text-xs font-bold transition ${
         active
-          ? 'bg-red-600 text-black'
-          : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
+          ? 'bg-red-600 text-white'
+          : 'text-zinc-600 hover:bg-zinc-200 hover:text-zinc-950'
       }`}
     >
       <span className="inline-flex items-center justify-center gap-1">
@@ -1074,7 +1074,7 @@ function Count({ value }: { value: number }) {
 
 function Badge({ value }: { value: number }) {
   return (
-    <span className="ml-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-black/20 px-1 text-[10px] font-black">
+    <span className="ml-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-zinc-950/10 px-1 text-[10px] font-black">
       {value}
     </span>
   );
@@ -1096,22 +1096,22 @@ function PeoplePanel({
           key={p.identity}
           className={`relative overflow-hidden rounded-2xl border p-3 inset-border ${
             p.isSpeaking
-              ? 'border-red-600/30 bg-zinc-900/80 shadow-[0_0_15px_-5px_rgba(220,38,38,0.25)]'
-              : 'border-transparent bg-zinc-900/55'
+              ? 'border-red-600/30 bg-white shadow-[0_0_15px_-5px_rgba(220,38,38,0.25)]'
+              : 'border-transparent bg-white/85'
           }`}
         >
           <div className="flex items-center gap-3">
             <span
               className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-black uppercase ${
                 p.isSpeaking
-                  ? 'bg-red-600 text-black'
-                  : 'bg-zinc-800 text-zinc-500'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-zinc-200 text-zinc-500'
               }`}
             >
               {p.displayName.slice(0, 1)}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-bold text-zinc-100">
+              <span className="block truncate text-sm font-bold text-zinc-950">
                 {p.displayName}
               </span>
               {p.isSpeaking ? (
@@ -1133,7 +1133,7 @@ function PeoplePanel({
                 className={`rounded-lg px-2 py-1 text-[10px] font-bold uppercase ${
                   p.muted
                     ? 'border border-red-700 bg-red-500/20 text-red-300'
-                    : 'border border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                    : 'border border-zinc-300 bg-zinc-200 text-zinc-700 hover:bg-zinc-300'
                 }`}
               >
                 {p.muted ? 'Muted' : 'Mute'}
@@ -1187,7 +1187,7 @@ function ChatPanel({
   currentUser: string;
 }) {
   return (
-    <div className="flex min-h-[360px] flex-col overflow-hidden rounded-3xl bg-zinc-900/55 inset-border">
+    <div className="flex min-h-[360px] flex-col overflow-hidden rounded-3xl bg-white/85 inset-border">
       <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto px-3 py-3">
         {messages.length === 0 && (
           <div className="pt-8 text-center text-xs text-zinc-500">
@@ -1204,12 +1204,12 @@ function ChatPanel({
               <div
                 className={`max-w-[80%] rounded-2xl px-3 py-2 ${
                   isMine
-                    ? 'bg-red-600 text-black'
-                    : 'bg-zinc-800 text-zinc-100'
+                    ? 'bg-red-600 text-white'
+                    : 'bg-zinc-200 text-zinc-950'
                 }`}
               >
                 {!isMine && (
-                  <div className="mb-0.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                  <div className="mb-0.5 text-[10px] font-bold uppercase tracking-wider text-zinc-600">
                     {m.from}
                   </div>
                 )}
@@ -1233,7 +1233,7 @@ function ChatPanel({
           e.preventDefault();
           sendMessage();
         }}
-        className="flex gap-2 border-t border-zinc-800 p-2"
+        className="flex gap-2 border-t border-zinc-200 p-2"
       >
         <input
           type="text"
@@ -1241,12 +1241,12 @@ function ChatPanel({
           onChange={(e) => setDraft(e.target.value)}
           placeholder={connected ? 'Type a message…' : 'Not connected'}
           disabled={!connected}
-          className="flex-1 rounded-2xl border border-zinc-800 bg-zinc-950 px-3 py-3 text-sm outline-none focus:border-red-600/50 disabled:opacity-50"
+          className="flex-1 rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm outline-none focus:border-red-600/50 disabled:opacity-50"
         />
         <button
           type="submit"
           disabled={!connected || !draft.trim()}
-          className="rounded-2xl bg-red-600 px-4 text-sm font-black text-black disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-2xl bg-red-600 px-4 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40"
         >
           Send
         </button>
@@ -1264,7 +1264,7 @@ function ReplaysPanel({
 }) {
   if (replays.length === 0) {
     return (
-      <div className="rounded-3xl bg-zinc-900/55 p-6 text-center text-xs text-zinc-500 inset-border">
+      <div className="rounded-3xl bg-white/85 p-6 text-center text-xs text-zinc-500 inset-border">
         No voice clips yet. Anything you receive while on this page is recorded
         here so you can replay it. Clips disappear when you leave the channel.
       </div>
@@ -1278,7 +1278,7 @@ function ReplaysPanel({
         </span>
         <button
           onClick={onClear}
-          className="text-[11px] text-zinc-500 hover:text-zinc-200"
+          className="text-[11px] text-zinc-500 hover:text-zinc-800"
         >
           Clear all
         </button>
@@ -1287,7 +1287,7 @@ function ReplaysPanel({
         {replays.map((r) => (
           <li
             key={r.id}
-            className="rounded-2xl border border-zinc-800 bg-zinc-900/55 p-3 inset-border"
+            className="rounded-2xl border border-zinc-200 bg-white/85 p-3 inset-border"
           >
             <div className="flex justify-between items-baseline mb-1">
               <span className="text-sm font-medium">{r.from}</span>
