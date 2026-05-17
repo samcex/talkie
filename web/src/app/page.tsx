@@ -140,19 +140,19 @@ export default function HomePage() {
     <main className="min-h-dvh talkie-shell flex justify-center text-zinc-100">
       <div className="talkie-phone relative flex min-h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-zinc-950">
         <div className="talkie-noise" />
-        <header className="glass-panel relative z-10 flex items-center justify-between rounded-b-[2rem] px-5 pb-4 pt-10">
-          <div className="flex min-w-0 items-center gap-3">
+        <header className="glass-panel relative z-10 grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-b-[2rem] px-5 pb-4 pt-10">
+          <div className="flex min-w-0 items-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 inset-border">
               <Logo size={34} />
             </div>
-            <div className="min-w-0">
-              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-500">
-                Callsign
-              </div>
-              <h1 className="truncate text-xl font-black tracking-tight text-white">
-                {isLoaded && greetingName ? greetingName : 'Talkie'}
-              </h1>
+          </div>
+          <div className="min-w-0 text-center">
+            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-500">
+              Callsign
             </div>
+            <h1 className="truncate text-xl font-black tracking-tight text-white">
+              {isLoaded && greetingName ? greetingName : 'Talkie'}
+            </h1>
           </div>
           <div className="flex items-center gap-2">
             {isAdmin && (
