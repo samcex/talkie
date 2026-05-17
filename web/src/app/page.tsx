@@ -13,6 +13,13 @@ import {
 } from '@/lib/recent-channels';
 import { setChannelPin } from '@/lib/channel-pin';
 
+type DirectUser = {
+  id: string;
+  name: string;
+  email: string;
+  initials: string;
+};
+
 export default function HomePage() {
   const router = useRouter();
   const { user, isLoaded } = useUser();
@@ -24,10 +31,53 @@ export default function HomePage() {
     value: string;
     error: string | null;
   } | null>(null);
+  const [directQuery, setDirectQuery] = useState('');
+  const [directUsers, setDirectUsers] = useState<DirectUser[]>([]);
+  const [directLoading, setDirectLoading] = useState(false);
+  const [directError, setDirectError] = useState<string | null>(null);
 
   useEffect(() => {
     setRecent(getRecentChannels());
   }, []);
+
+  useEffect(() => {
+    const q = directQuery.trim();
+    if (q.length < 2) {
+      setDirectUsers([]);
+      setDirectLoading(false);
+      setDirectError(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setDirectLoading(true);
+      setDirectError(null);
+      try {
+        const res = await fetch(
+          `/api/users/search?q=${encodeURIComponent(q)}`,
+          { signal: controller.signal },
+        );
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error ?? 'User search failed');
+        }
+        const body = (await res.json()) as { users?: DirectUser[] };
+        setDirectUsers(body.users ?? []);
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        setDirectUsers([]);
+        setDirectError(err instanceof Error ? err.message : 'User search failed');
+      } finally {
+        if (!controller.signal.aborted) setDirectLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [directQuery]);
 
   const isAdmin =
     (user?.publicMetadata as { role?: string } | undefined)?.role === 'admin';
@@ -73,6 +123,14 @@ export default function HomePage() {
   function dropRecent(target: string) {
     forgetChannel(target);
     setRecent(getRecentChannels());
+  }
+
+  function startDirectCall(target: DirectUser) {
+    router.push(
+      `/channel/direct?peer=${encodeURIComponent(target.id)}&title=${encodeURIComponent(
+        target.name,
+      )}`,
+    );
   }
 
   const greetingName =
@@ -197,6 +255,75 @@ export default function HomePage() {
               {pin.trim() ? 'Join Private' : 'Connect'}
             </button>
           </form>
+
+          <section className="mt-5 rounded-[2rem] bg-zinc-900/60 p-4 inset-border">
+            <div className="mb-3 flex items-end justify-between gap-3">
+              <div>
+                <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">
+                  Direct Call
+                </h2>
+                <p className="mt-1 text-xs text-zinc-500">
+                  Search a teammate and open a private one-to-one channel.
+                </p>
+              </div>
+              <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+                1:1
+              </span>
+            </div>
+            <div className="relative">
+              <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+              <input
+                type="search"
+                value={directQuery}
+                onChange={(e) => setDirectQuery(e.target.value)}
+                placeholder="Search by name or email"
+                className="w-full rounded-2xl border border-white/10 bg-zinc-950 py-4 pl-11 pr-4 text-sm text-white outline-none transition focus:border-emerald-500/60"
+              />
+            </div>
+            {directError && (
+              <div className="mt-3 text-xs text-red-400">{directError}</div>
+            )}
+            <div className="mt-3 space-y-2">
+              {directLoading && (
+                <div className="rounded-2xl bg-zinc-950 px-3 py-3 text-xs text-zinc-500 inset-border">
+                  Searching users...
+                </div>
+              )}
+              {!directLoading &&
+                directQuery.trim().length >= 2 &&
+                directUsers.length === 0 &&
+                !directError && (
+                  <div className="rounded-2xl bg-zinc-950 px-3 py-3 text-xs text-zinc-500 inset-border">
+                    No users found.
+                  </div>
+                )}
+              {directUsers.map((u) => (
+                <button
+                  key={u.id}
+                  type="button"
+                  onClick={() => startDirectCall(u)}
+                  className="flex w-full items-center gap-3 rounded-2xl bg-zinc-950 px-3 py-3 text-left transition active:scale-[0.99] inset-border hover:bg-zinc-900"
+                >
+                  <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500 text-sm font-black text-black">
+                    {u.initials}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-bold text-zinc-100">
+                      {u.name}
+                    </span>
+                    {u.email && (
+                      <span className="block truncate font-mono text-xs text-zinc-500">
+                        {u.email}
+                      </span>
+                    )}
+                  </span>
+                  <span className="rounded-full bg-emerald-500 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-black">
+                    Call
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
 
           {recent.length > 0 && (
             <section className="mt-7">
@@ -385,6 +512,25 @@ function HashIcon({ className }: { className?: string }) {
       <path d="M4 15h16" />
       <path d="M10 3 8 21" />
       <path d="m16 3-2 18" />
+    </svg>
+  );
+}
+
+function SearchIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
     </svg>
   );
 }

@@ -58,6 +58,10 @@ export default function ChannelPage() {
   const router = useRouter();
   const { user, isLoaded } = useUser();
   const channelName = params?.name ?? 'general';
+  const directUserId = search.get('peer')?.trim() || undefined;
+  const directTitle = search.get('title')?.trim() || 'Direct Call';
+  const isDirect = channelName === 'direct' && Boolean(directUserId);
+  const displayChannelName = isDirect ? directTitle : channelName;
   const userName =
     user?.fullName ||
     user?.username ||
@@ -65,7 +69,7 @@ export default function ChannelPage() {
     user?.emailAddresses[0]?.emailAddress ||
     '';
   const userId = user?.id ?? '';
-  const isPrivate = search.get('private') === '1';
+  const isPrivate = search.get('private') === '1' || isDirect;
 
   const roomRef = useRef<Room | null>(null);
   const localTrackRef = useRef<LocalAudioTrack | null>(null);
@@ -293,7 +297,7 @@ export default function ChannelPage() {
       .on(RoomEvent.ConnectionStateChanged, (s) => {
         setState(s);
         if (s === ConnectionState.Connected) {
-          rememberChannel(channelName, isPrivate);
+          if (!isDirect) rememberChannel(channelName, isPrivate);
         }
       })
       .on(RoomEvent.ParticipantConnected, (p: RemoteParticipant) => {
@@ -391,7 +395,7 @@ export default function ChannelPage() {
 
     (async () => {
       try {
-        const pin = isPrivate ? getChannelPin(channelName) ?? '' : '';
+        const pin = isPrivate && !isDirect ? getChannelPin(channelName) ?? '' : '';
         const res = await fetch('/api/token', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
@@ -399,6 +403,7 @@ export default function ChannelPage() {
             identity: userName,
             room: channelName,
             pin,
+            directUserId,
           }),
         });
         if (!res.ok) {
@@ -445,6 +450,8 @@ export default function ChannelPage() {
     };
   }, [
     channelName,
+    directUserId,
+    isDirect,
     userId,
     isLoaded,
     isPrivate,
@@ -632,7 +639,7 @@ export default function ChannelPage() {
               <div className="flex min-w-0 items-center gap-2">
                 {isPrivate && <LockIcon className="h-3.5 w-3.5 flex-shrink-0 text-emerald-400" />}
                 <h1 className="truncate text-base font-black uppercase tracking-tight text-white">
-                  {channelName}
+                  {displayChannelName}
                 </h1>
               </div>
             </div>
@@ -693,11 +700,17 @@ export default function ChannelPage() {
                     }`}
                   />
                   <span className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400">
-                    {connected ? 'Encrypted Link' : 'Link Pending'}
+                  {isDirect
+                    ? connected
+                      ? 'Direct Link'
+                      : 'Direct Pending'
+                    : connected
+                      ? 'Encrypted Link'
+                      : 'Link Pending'}
                   </span>
                 </div>
                 <div className="text-3xl font-black uppercase tracking-tight text-white">
-                  {channelName}
+                  {displayChannelName}
                 </div>
               </div>
               <div className="rounded-xl bg-zinc-800/80 p-2 text-zinc-400 inset-border">
@@ -722,7 +735,7 @@ export default function ChannelPage() {
                   Mode
                 </div>
                 <div className="font-mono text-lg text-zinc-200">
-                  {isPrivate ? 'PIN' : 'OPEN'}
+                  {isDirect ? '1:1' : isPrivate ? 'PIN' : 'OPEN'}
                 </div>
               </div>
             </div>
