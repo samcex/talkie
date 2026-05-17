@@ -140,8 +140,8 @@ export default function HomePage() {
     <main className="min-h-dvh talkie-shell flex justify-center text-zinc-950">
       <div className="talkie-phone relative flex min-h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-white">
         <div className="talkie-noise" />
-        <header className="glass-panel relative z-10 grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-b-[2rem] px-5 pb-4 pt-10">
-          <div className="flex min-w-0 items-center">
+        <header className="glass-panel relative z-10 grid grid-cols-[84px_1fr_84px] items-center gap-2 rounded-b-[2rem] px-5 pb-4 pt-10">
+          <div className="flex min-w-0 items-center justify-start">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100 inset-border">
               <Logo size={34} />
             </div>
@@ -154,15 +154,7 @@ export default function HomePage() {
               {isLoaded && greetingName ? greetingName : 'Talkie'}
             </h1>
           </div>
-          <div className="flex items-center gap-2">
-            {isAdmin && (
-              <Link
-                href="/admin"
-                className="rounded-full bg-red-600/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-red-700 inset-border"
-              >
-                Admin
-              </Link>
-            )}
+          <div className="flex items-center justify-end gap-2">
             <Link
               href="/settings"
               aria-label="Settings"
@@ -176,6 +168,17 @@ export default function HomePage() {
 
         <div className="relative z-10 flex-1 overflow-y-auto no-scrollbar px-4 pb-8 pt-5">
           <IOSInstallHint />
+
+          {isAdmin && (
+            <div className="mb-3 flex justify-end">
+              <Link
+                href="/admin"
+                className="rounded-full bg-red-600/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-red-700 inset-border"
+              >
+                Admin
+              </Link>
+            </div>
+          )}
 
           <form
             onSubmit={onSubmit}

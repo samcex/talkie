@@ -8,37 +8,41 @@ export function Logo({ size = 32 }: { size?: number }) {
       role="img"
       aria-label="Talkie"
     >
-      <rect width="64" height="64" rx="14" fill="#0a0a0a" />
-      <rect x="13" y="12" width="14" height="6" rx="2" fill="#dc2626" />
-      <rect x="19" y="2" width="2" height="11" rx="1" fill="#dc2626" />
-      <circle cx="20" cy="2" r="2" fill="#dc2626" />
+      <rect width="64" height="64" rx="18" fill="#dc2626" />
+      <path
+        d="M21 18c0-2.8 2.2-5 5-5h12c2.8 0 5 2.2 5 5v28c0 2.8-2.2 5-5 5H26c-2.8 0-5-2.2-5-5V18Z"
+        fill="#fff"
+      />
+      <path
+        d="M27 12V7m10 5V7"
+        stroke="#fff"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
       <rect
-        x="14"
-        y="16"
-        width="36"
-        height="44"
-        rx="6"
-        fill="#171717"
-        stroke="#dc2626"
-        strokeWidth="2"
+        x="26"
+        y="20"
+        width="12"
+        height="11"
+        rx="2"
+        fill="#dc2626"
+        opacity="0.14"
       />
-      <rect x="18" y="20" width="28" height="14" rx="2" fill="#052e1a" />
-      <g fill="#dc2626" opacity="0.65">
-        <rect x="21" y="23" width="22" height="1.5" rx="0.75" />
-        <rect x="21" y="26" width="22" height="1.5" rx="0.75" />
-        <rect x="21" y="29" width="22" height="1.5" rx="0.75" />
-      </g>
-      <circle
-        cx="32"
-        cy="46"
-        r="8"
-        fill="#0a0a0a"
-        stroke="#dc2626"
-        strokeWidth="2"
+      <circle cx="32" cy="39" r="6" fill="#dc2626" />
+      <path
+        d="M14 25a14 14 0 0 1 0 14M50 25a14 14 0 0 0 0 14"
+        stroke="#fff"
+        strokeWidth="3"
+        strokeLinecap="round"
+        opacity="0.82"
       />
-      <circle cx="32" cy="46" r="4" fill="#dc2626" />
-      <circle cx="42" cy="11" r="2" fill="#dc2626" />
-      <circle cx="46" cy="11" r="2" fill="#dc2626" opacity="0.5" />
+      <path
+        d="M9 20a22 22 0 0 1 0 24M55 20a22 22 0 0 0 0 24"
+        stroke="#fff"
+        strokeWidth="3"
+        strokeLinecap="round"
+        opacity="0.42"
+      />
     </svg>
   );
 }
