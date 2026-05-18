@@ -110,8 +110,24 @@ function serializeStatus(status: CallStatusRow | CallStatus | null) {
   };
 }
 
+async function signedInUserId() {
+  if (
+    !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+    !process.env.CLERK_SECRET_KEY
+  ) {
+    return null;
+  }
+
+  try {
+    const { userId } = await auth();
+    return userId;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(req: NextRequest) {
-  const { userId } = await auth();
+  const userId = await signedInUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Not signed in' }, { status: 401 });
   }
@@ -260,7 +276,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
+  const userId = await signedInUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Not signed in' }, { status: 401 });
   }
@@ -391,7 +407,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const { userId } = await auth();
+  const userId = await signedInUserId();
   if (!userId) {
     return NextResponse.json({ error: 'Not signed in' }, { status: 401 });
   }

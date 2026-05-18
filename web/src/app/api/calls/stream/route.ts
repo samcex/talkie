@@ -84,7 +84,7 @@ async function pendingCallsFor(userId: string) {
 }
 
 export async function GET() {
-  const { userId } = await auth();
+  const userId = await signedInUserId();
   if (!userId) {
     return new Response('Not signed in', { status: 401 });
   }
@@ -137,4 +137,20 @@ function initialsFor(name: string): string {
     (parts[0]?.[0] ?? '?').toUpperCase() +
     (parts[1]?.[0] ?? '').toUpperCase()
   );
+}
+
+async function signedInUserId() {
+  if (
+    !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ||
+    !process.env.CLERK_SECRET_KEY
+  ) {
+    return null;
+  }
+
+  try {
+    const { userId } = await auth();
+    return userId;
+  } catch {
+    return null;
+  }
 }
