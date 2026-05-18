@@ -106,7 +106,7 @@ The Kotlin app reads the token URL from `TALKIE_TOKEN_BASE_URL` Gradle property 
 For a release build pointing at your deployed web URL:
 ```
 cd android
-./gradlew assembleRelease -PTALKIE_TOKEN_BASE_URL=https://your.netlify.app
+./gradlew assembleRelease -PTALKIE_TOKEN_BASE_URL=https://your-vercel-app.vercel.app
 ```
 
 For a debug build (no signing required):
