@@ -252,9 +252,12 @@ export async function GET(req: NextRequest) {
       });
     }
     const status = statusStore().get(id);
+    const canViewStatus =
+      status &&
+      (status.targetUserId === userId || status.fromUserId === userId);
     return NextResponse.json({
       call: null,
-      status: status ? serializeStatus(status) : null,
+      status: canViewStatus ? serializeStatus(status) : null,
       persistent: false,
     });
   }
