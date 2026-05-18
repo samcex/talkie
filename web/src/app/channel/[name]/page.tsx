@@ -61,6 +61,8 @@ export default function ChannelPage() {
   const directUserId = search.get('peer')?.trim() || undefined;
   const directTitle = search.get('title')?.trim() || 'Direct Call';
   const wantsRing = search.get('ring') === '1';
+  const outgoingCallId = search.get('call')?.trim() || undefined;
+  const outgoingCallExpiresAt = Number(search.get('expires') ?? 0) || 0;
   const isDirect = channelName === 'direct' && Boolean(directUserId);
   const displayChannelName = isDirect ? directTitle : channelName;
   const userName =
@@ -106,6 +108,9 @@ export default function ChannelPage() {
   const [draft, setDraft] = useState('');
   const [unreadChat, setUnreadChat] = useState(0);
   const [unreadReplays, setUnreadReplays] = useState(0);
+  const [outgoingCallStatus, setOutgoingCallStatus] = useState<
+    'ringing' | 'accepted' | 'answered' | 'declined' | 'expired'
+  >(wantsRing ? 'ringing' : 'answered');
 
   const refreshParticipants = useCallback((room: Room) => {
     const list: ParticipantUi[] = [];
@@ -625,14 +630,79 @@ export default function ChannelPage() {
   const connected = state === ConnectionState.Connected;
   const remoteParticipantCount = participants.filter((p) => !p.isLocal).length;
   const waitingForPeer =
-    wantsRing && isDirect && connected && remoteParticipantCount === 0;
+    wantsRing &&
+    isDirect &&
+    connected &&
+    remoteParticipantCount === 0 &&
+    (outgoingCallStatus === 'ringing' || outgoingCallStatus === 'accepted');
 
   useEffect(() => {
-    if (!waitingForPeer) return;
+    if (!waitingForPeer || outgoingCallStatus !== 'ringing') return;
     beep();
     const timer = window.setInterval(beep, 3500);
     return () => window.clearInterval(timer);
-  }, [beep, waitingForPeer]);
+  }, [beep, outgoingCallStatus, waitingForPeer]);
+
+  useEffect(() => {
+    if (!wantsRing || !isDirect) return;
+    if (remoteParticipantCount > 0) {
+      setOutgoingCallStatus('answered');
+      return;
+    }
+    setOutgoingCallStatus((current) =>
+      current === 'accepted' ? 'accepted' : 'ringing',
+    );
+  }, [isDirect, remoteParticipantCount, wantsRing]);
+
+  useEffect(() => {
+    if (!waitingForPeer || !outgoingCallExpiresAt) return;
+    const remaining = outgoingCallExpiresAt - Date.now();
+    if (remaining <= 0) {
+      setOutgoingCallStatus('expired');
+      return;
+    }
+    const timer = window.setTimeout(
+      () => setOutgoingCallStatus('expired'),
+      remaining,
+    );
+    return () => window.clearTimeout(timer);
+  }, [outgoingCallExpiresAt, waitingForPeer]);
+
+  useEffect(() => {
+    if (!waitingForPeer || !outgoingCallId) return;
+
+    let cancelled = false;
+    const callId = outgoingCallId;
+    async function checkCallStatus() {
+      try {
+        const res = await fetch(
+          `/api/calls?id=${encodeURIComponent(callId)}`,
+          { cache: 'no-store' },
+        );
+        if (!res.ok || cancelled) return;
+        const body = (await res.json()) as {
+          call?: unknown | null;
+          status?: { status?: string } | null;
+        };
+        const status = body.status?.status;
+        if (status === 'accepted') {
+          setOutgoingCallStatus('accepted');
+        } else if (status === 'declined') {
+          setOutgoingCallStatus('declined');
+        } else if (status === 'expired') {
+          setOutgoingCallStatus('expired');
+        } else if (!body.call && Date.now() < outgoingCallExpiresAt) {
+          setOutgoingCallStatus('expired');
+        }
+      } catch {}
+    }
+
+    const timer = window.setInterval(checkCallStatus, 3000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [outgoingCallExpiresAt, outgoingCallId, waitingForPeer]);
 
   return (
     <main className="min-h-dvh talkie-shell flex justify-center text-zinc-950">
@@ -680,10 +750,16 @@ export default function ChannelPage() {
           </div>
         )}
 
-        {waitingForPeer && (
+        {wantsRing && isDirect && outgoingCallStatus !== 'answered' && (
           <div className="relative z-20 border-b border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-            Calling {displayChannelName}. This line is open and will connect as
-            soon as they join.
+            {outgoingCallStatus === 'ringing' &&
+              `Calling ${displayChannelName}. This line is open and will connect as soon as they join.`}
+            {outgoingCallStatus === 'accepted' &&
+              `${displayChannelName} answered. Connecting the direct line...`}
+            {outgoingCallStatus === 'declined' &&
+              `${displayChannelName} declined or cancelled the call.`}
+            {outgoingCallStatus === 'expired' &&
+              `${displayChannelName} did not answer. You can leave this line open or call again.`}
           </div>
         )}
 

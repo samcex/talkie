@@ -16,19 +16,45 @@ type PendingCall = {
 
 type CallStore = Map<string, PendingCall>;
 
+type CallStatusValue = 'ringing' | 'accepted' | 'declined';
+
+type CallStatus = {
+  id: string;
+  fromUserId: string;
+  targetUserId: string;
+  status: CallStatusValue;
+  createdAt: number;
+  updatedAt: number;
+  expiresAt: number;
+};
+
 type PendingCallRow = {
   id: string;
   fromUserId: string;
   fromName: string;
   fromEmail: string;
+  targetUserId?: string;
+  targetName?: string;
   createdAt: number | string;
   expiresAt: number | string;
 };
 
+type CallStatusRow = {
+  id: string;
+  fromUserId: string;
+  targetUserId: string;
+  status: CallStatusValue;
+  createdAt: number | string;
+  updatedAt: number | string;
+  expiresAt: number | string;
+};
+
 const TTL_MS = 45_000;
+const STATUS_RETENTION_MS = 5 * 60_000;
 
 const globalForCalls = globalThis as typeof globalThis & {
   __talkiePendingCalls?: CallStore;
+  __talkieCallStatuses?: Map<string, CallStatus>;
 };
 
 function store(): CallStore {
@@ -38,9 +64,19 @@ function store(): CallStore {
   return globalForCalls.__talkiePendingCalls;
 }
 
+function statusStore() {
+  if (!globalForCalls.__talkieCallStatuses) {
+    globalForCalls.__talkieCallStatuses = new Map();
+  }
+  return globalForCalls.__talkieCallStatuses;
+}
+
 function prune(now = Date.now()) {
   for (const [id, call] of store()) {
     if (call.expiresAt <= now) store().delete(id);
+  }
+  for (const [id, status] of statusStore()) {
+    if (status.updatedAt <= now - STATUS_RETENTION_MS) statusStore().delete(id);
   }
 }
 
@@ -49,19 +85,101 @@ async function pruneDb(now = Date.now()) {
   if (!db) return false;
   await ensureSchema();
   await db`delete from talkie_pending_calls where expires_at <= ${now}`;
+  await db`
+    delete from talkie_call_statuses
+    where updated_at <= ${now - STATUS_RETENTION_MS}
+  `;
   return true;
 }
 
-export async function GET() {
+function serializeStatus(status: CallStatusRow | CallStatus | null) {
+  if (!status) return null;
+  const expiresAt = Number(status.expiresAt);
+  const rawStatus = status.status;
+  return {
+    id: status.id,
+    fromUserId: status.fromUserId,
+    targetUserId: status.targetUserId,
+    status:
+      rawStatus === 'ringing' && expiresAt <= Date.now()
+        ? 'expired'
+        : rawStatus,
+    createdAt: Number(status.createdAt),
+    updatedAt: Number(status.updatedAt),
+    expiresAt,
+  };
+}
+
+export async function GET(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: 'Not signed in' }, { status: 401 });
   }
 
   const now = Date.now();
+  const id = new URL(req.url).searchParams.get('id')?.trim();
   const db = sql();
   if (db) {
     await pruneDb(now);
+    if (id) {
+      const calls = (await db`
+        select
+          id,
+          from_user_id as "fromUserId",
+          from_name as "fromName",
+          from_email as "fromEmail",
+          target_user_id as "targetUserId",
+          target_name as "targetName",
+          created_at as "createdAt",
+          expires_at as "expiresAt"
+        from talkie_pending_calls
+        where id = ${id}
+          and (target_user_id = ${userId} or from_user_id = ${userId})
+        limit 1
+      `) as PendingCallRow[];
+      const call = calls[0];
+      if (call) {
+        return NextResponse.json({
+          call: {
+            ...call,
+            initials: initialsFor(call.fromName as string),
+            createdAt: Number(call.createdAt),
+            expiresAt: Number(call.expiresAt),
+          },
+          status: serializeStatus({
+            id: call.id,
+            fromUserId: call.fromUserId,
+            targetUserId: call.targetUserId ?? '',
+            status: 'ringing',
+            createdAt: call.createdAt,
+            updatedAt: call.createdAt,
+            expiresAt: call.expiresAt,
+          }),
+          persistent: true,
+        });
+      }
+
+      const statuses = (await db`
+        select
+          id,
+          from_user_id as "fromUserId",
+          target_user_id as "targetUserId",
+          status,
+          created_at as "createdAt",
+          updated_at as "updatedAt",
+          expires_at as "expiresAt"
+        from talkie_call_statuses
+        where id = ${id}
+          and (target_user_id = ${userId} or from_user_id = ${userId})
+        limit 1
+      `) as CallStatusRow[];
+      return NextResponse.json({
+        call: null,
+        status: serializeStatus(statuses[0] ?? null),
+        persistent: true,
+      });
+    }
+
     const calls = (await db`
       select
         id,
@@ -86,6 +204,45 @@ export async function GET() {
   }
 
   prune(now);
+  if (id) {
+    const call = store().get(id);
+    if (
+      call &&
+      (call.targetUserId === userId || call.fromUserId === userId)
+    ) {
+      const status = statusStore().get(id) ?? {
+        id: call.id,
+        fromUserId: call.fromUserId,
+        targetUserId: call.targetUserId,
+        status: 'ringing' as const,
+        createdAt: call.createdAt,
+        updatedAt: call.createdAt,
+        expiresAt: call.expiresAt,
+      };
+      return NextResponse.json({
+        call: {
+          id: call.id,
+          fromUserId: call.fromUserId,
+          fromName: call.fromName,
+          fromEmail: call.fromEmail,
+          targetUserId: call.targetUserId,
+          targetName: call.targetName,
+          initials: initialsFor(call.fromName),
+          createdAt: call.createdAt,
+          expiresAt: call.expiresAt,
+        },
+        status: serializeStatus(status),
+        persistent: false,
+      });
+    }
+    const status = statusStore().get(id);
+    return NextResponse.json({
+      call: null,
+      status: status ? serializeStatus(status) : null,
+      persistent: false,
+    });
+  }
+
   const calls = [...store().values()]
     .filter((call) => call.targetUserId === userId)
     .sort((a, b) => b.createdAt - a.createdAt)
@@ -184,8 +341,41 @@ export async function POST(req: NextRequest) {
         ${call.expiresAt}
       )
     `;
+    await db`
+      insert into talkie_call_statuses (
+        id,
+        from_user_id,
+        target_user_id,
+        status,
+        created_at,
+        updated_at,
+        expires_at
+      )
+      values (
+        ${call.id},
+        ${call.fromUserId},
+        ${call.targetUserId},
+        ${'ringing'},
+        ${call.createdAt},
+        ${call.createdAt},
+        ${call.expiresAt}
+      )
+      on conflict (id) do update set
+        status = excluded.status,
+        updated_at = excluded.updated_at,
+        expires_at = excluded.expires_at
+    `;
   } else {
     store().set(id, call);
+    statusStore().set(id, {
+      id: call.id,
+      fromUserId: call.fromUserId,
+      targetUserId: call.targetUserId,
+      status: 'ringing',
+      createdAt: call.createdAt,
+      updatedAt: call.createdAt,
+      expiresAt: call.expiresAt,
+    });
   }
 
   return NextResponse.json({
@@ -207,13 +397,68 @@ export async function DELETE(req: NextRequest) {
   }
 
   const id = new URL(req.url).searchParams.get('id')?.trim();
+  const nextStatus = new URL(req.url).searchParams.get('status')?.trim();
   if (!id) {
     return NextResponse.json({ error: 'id is required' }, { status: 400 });
   }
+  if (
+    nextStatus &&
+    nextStatus !== 'accepted' &&
+    nextStatus !== 'declined'
+  ) {
+    return NextResponse.json({ error: 'invalid status' }, { status: 400 });
+  }
+  const statusUpdate = nextStatus as 'accepted' | 'declined' | undefined;
 
   const db = sql();
+  const now = Date.now();
   if (db) {
     await ensureSchema();
+    const calls = (await db`
+      select
+        id,
+        from_user_id as "fromUserId",
+        target_user_id as "targetUserId",
+        created_at as "createdAt",
+        expires_at as "expiresAt"
+      from talkie_pending_calls
+      where id = ${id}
+        and (target_user_id = ${userId} or from_user_id = ${userId})
+      limit 1
+    `) as Array<{
+      id: string;
+      fromUserId: string;
+      targetUserId: string;
+      createdAt: number | string;
+      expiresAt: number | string;
+    }>;
+    const call = calls[0];
+    if (call && statusUpdate && call.targetUserId === userId) {
+      await db`
+        insert into talkie_call_statuses (
+          id,
+          from_user_id,
+          target_user_id,
+          status,
+          created_at,
+          updated_at,
+          expires_at
+        )
+        values (
+          ${call.id},
+          ${call.fromUserId},
+          ${call.targetUserId},
+          ${statusUpdate},
+          ${Number(call.createdAt)},
+          ${now},
+          ${Number(call.expiresAt)}
+        )
+        on conflict (id) do update set
+          status = excluded.status,
+          updated_at = excluded.updated_at,
+          expires_at = excluded.expires_at
+      `;
+    }
     await db`
       delete from talkie_pending_calls
       where id = ${id}
@@ -225,6 +470,17 @@ export async function DELETE(req: NextRequest) {
       call &&
       (call.targetUserId === userId || call.fromUserId === userId)
     ) {
+      if (statusUpdate && call.targetUserId === userId) {
+        statusStore().set(id, {
+          id: call.id,
+          fromUserId: call.fromUserId,
+          targetUserId: call.targetUserId,
+          status: statusUpdate,
+          createdAt: call.createdAt,
+          updatedAt: now,
+          expiresAt: call.expiresAt,
+        });
+      }
       store().delete(id);
     }
   }

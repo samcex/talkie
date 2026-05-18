@@ -1,0 +1,47 @@
+name: Web
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "vercel.json"
+      - ".github/workflows/web.yml"
+  pull_request:
+    paths:
+      - "web/**"
+      - "vercel.json"
+      - ".github/workflows/web.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          LIVEKIT_API_KEY: test-key
+          LIVEKIT_API_SECRET: test-secret
+          NEXT_PUBLIC_LIVEKIT_URL: wss://example.invalid
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_example
+          CLERK_SECRET_KEY: sk_test_example
+          NEXT_PUBLIC_CLERK_SIGN_IN_URL: /sign-in
+          NEXT_PUBLIC_CLERK_SIGN_UP_URL: /sign-up
+          NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL: /
+          NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL: /

@@ -3,6 +3,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
 import "./globals.css";
 import { ServiceWorkerRegister } from "./sw-register";
+import { IncomingCallAlert } from "@/components/IncomingCallAlert";
 
 export const metadata: Metadata = {
   title: "Talkie — Push to talk",
@@ -55,6 +56,7 @@ export default function RootLayout({
       <html lang="en" className="h-full antialiased">
         <body className="min-h-full flex flex-col bg-neutral-950">
           {children}
+          <IncomingCallAlert />
           <ServiceWorkerRegister />
         </body>
       </html>

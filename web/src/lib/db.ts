@@ -57,6 +57,23 @@ export async function ensureSchema() {
         create index if not exists talkie_pending_calls_target_expires_idx
         on talkie_pending_calls (target_user_id, expires_at)
       `;
+
+      await db`
+        create table if not exists talkie_call_statuses (
+          id text primary key,
+          from_user_id text not null,
+          target_user_id text not null,
+          status text not null,
+          created_at bigint not null,
+          updated_at bigint not null,
+          expires_at bigint not null
+        )
+      `;
+
+      await db`
+        create index if not exists talkie_call_statuses_participants_idx
+        on talkie_call_statuses (from_user_id, target_user_id, updated_at desc)
+      `;
     })().catch((err) => {
       schemaReady = null;
       throw err;

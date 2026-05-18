@@ -51,12 +51,43 @@ talkie/
    - `DATABASE_URL` (Neon pooled Postgres connection string)
 5. Deploy.
 
+### Direct-call alert verification
+
+After deploying, validate direct calls on real phones and at least one desktop
+browser. Use two signed-in users that have each other saved or searchable.
+
+1. Open Talkie as User A on one device and User B on another.
+2. On both devices, open **Settings** and enable:
+   - **Beep on incoming**
+   - **Vibrate on incoming**
+   - **Browser notifications**
+3. When the browser asks for notification permission, choose **Allow**.
+4. From User A, start a one-to-one call to User B.
+5. Confirm User B sees the full-screen incoming call alert from:
+   - the home page
+   - `/settings`
+   - an existing channel page
+6. Confirm User B gets the audible ring, vibration if supported, browser
+   notification, and flashing tab title.
+7. Tap **Answer** and confirm both users land in the same direct channel.
+8. Repeat the call and tap **Decline**. Confirm User A sees the declined or
+   cancelled status.
+9. Repeat the call and do not answer. Confirm User A sees the expired status
+   after the pending call timeout.
+
+If the incoming alert does not appear immediately, check that
+`/api/calls/stream` is reachable on the deployed domain. The web app uses that
+SSE route for near-real-time call updates and falls back to polling if streaming
+is unavailable.
+
 ## Neon database
 
 Talkie uses Neon Postgres when `DATABASE_URL` is configured. It stores:
 
 - saved contacts per Clerk user
 - pending direct-call alerts
+- short-lived direct-call status records for answered, declined, and expired
+  call feedback
 
 Create a Neon project, copy the pooled connection string, and add it as
 `DATABASE_URL` in Vercel. After deploy, sign in as an admin and open
