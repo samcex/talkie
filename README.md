@@ -55,6 +55,9 @@ talkie/
 
 After deploying, validate direct calls on real phones and at least one desktop
 browser. Use two signed-in users that have each other saved or searchable.
+The deployed environment must include the Clerk variables and `DATABASE_URL`;
+without them, protected call routes return `401 Not signed in` and direct-call
+alerts cannot be tested end to end.
 
 1. Open Talkie as User A on one device and User B on another.
 2. On both devices, open **Settings** and enable:
